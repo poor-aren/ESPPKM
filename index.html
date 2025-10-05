@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Simulator - Real AWS Connection</title>
+    <title>ESP32 Simulator - Sunstone PPOK</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .oled-screen {
@@ -48,7 +48,6 @@
     <div class="min-h-screen py-8">
         <div class="max-w-4xl mx-auto">
             
-            <!-- Alert Box -->
             <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
                 <div class="flex">
                     <div class="flex-shrink-0">
@@ -58,27 +57,26 @@
                     </div>
                     <div class="ml-3">
                         <p class="text-sm text-yellow-700">
-                            <strong>PENTING:</strong> ESP32 Simulator ini mensimulasikan flow. Pastikan sudah membuka sesi di website utama terlebih dahulu!
+                            <strong>PENTING:</strong> Pastikan sudah membuka sesi di website utama terlebih dahulu!
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Header -->
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-800">ESP32 Simulator</h1>
-                        <p class="text-gray-600 mt-1">Sunstone PPOK Detection System (AWS Connected)</p>
+                        <p class="text-gray-600 mt-1">Sunstone PPOK Detection System</p>
                     </div>
                     <div>
                         <div class="flex items-center space-x-2 mb-2">
-                            <div id="wifiStatus" class="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                            <span id="wifiText" class="text-sm text-gray-600">SUNSTONE ✓</span>
+                            <div id="wifiStatus" class="w-4 h-4 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-600">WiFi Connected</span>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div id="awsStatus" class="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
-                            <span class="text-sm text-gray-600">AWS IoT Ready</span>
+                            <div id="awsStatus" class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                            <span class="text-sm text-gray-600">AWS Ready</span>
                         </div>
                     </div>
                 </div>
@@ -86,16 +84,14 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                <!-- ESP32 Device Panel -->
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">ESP32 Device</h2>
                     
-                    <!-- OLED Display -->
                     <div class="oled-screen mb-6">
                         <div id="oledDisplay" class="text-sm leading-relaxed">
                             <p>SUNSTONE PPOK v1.0</p>
                             <p>─────────────────────</p>
-                            <p>WiFi: SUNSTONE ✓</p>
+                            <p>WiFi: SUNSTONE</p>
                             <p>AWS: Connected</p>
                             <p></p>
                             <p>Sistema siap</p>
@@ -103,28 +99,24 @@
                         </div>
                     </div>
 
-                    <!-- Rocker Switch -->
                     <div class="text-center mb-4">
                         <p class="text-sm text-gray-600 mb-2">Rocker Switch</p>
                         <div id="rockerSwitch" class="rocker-switch mx-auto" onclick="toggleRockerSwitch()"></div>
                         <p id="switchStatus" class="text-xs text-gray-500 mt-2">OFF</p>
                     </div>
 
-                    <!-- Status Info -->
                     <div id="sessionWarning" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 hidden">
-                        <p class="text-sm text-red-700">⚠️ Tidak ada sesi aktif! Buka sesi di website terlebih dahulu.</p>
+                        <p class="text-sm text-red-700">Tidak ada sesi aktif! Buka sesi di website terlebih dahulu.</p>
                     </div>
 
                     <div id="sessionActive" class="bg-green-50 border border-green-200 rounded-lg p-3 hidden">
-                        <p class="text-sm text-green-700">✓ Sesi aktif terdeteksi! Siap mengirim data.</p>
+                        <p class="text-sm text-green-700">Sesi aktif terdeteksi! Siap mengirim data.</p>
                     </div>
                 </div>
 
-                <!-- Sensor Control Panel -->
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Sensor Controls</h2>
                     
-                    <!-- MG811 -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             MG811 (CO2): <span id="mg811_value" class="font-bold text-blue-600">300</span>
@@ -137,7 +129,6 @@
                         </div>
                     </div>
 
-                    <!-- MQ7 -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             MQ7 (CO): <span id="mq7_value" class="font-bold text-blue-600">70</span>
@@ -150,7 +141,6 @@
                         </div>
                     </div>
 
-                    <!-- MQ3 -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             MQ3 (Alcohol): <span id="mq3_value" class="font-bold text-blue-600">50</span>
@@ -163,7 +153,6 @@
                         </div>
                     </div>
 
-                    <!-- MQ135 -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             MQ135 (Air Quality): <span id="mq135_value" class="font-bold text-blue-600">200</span>
@@ -176,7 +165,6 @@
                         </div>
                     </div>
 
-                    <!-- Preset Scenarios -->
                     <div class="mt-6">
                         <p class="text-sm font-medium text-gray-700 mb-2">Preset Scenarios</p>
                         <div class="grid grid-cols-3 gap-2">
@@ -195,13 +183,12 @@
 
             </div>
 
-            <!-- Log Panel -->
             <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Activity Log</h2>
                 <div id="logPanel" class="bg-gray-50 rounded p-4 max-h-64 overflow-y-auto font-mono text-xs space-y-1">
                     <p class="text-green-600">[System] ESP32 Simulator initialized</p>
                     <p class="text-green-600">[WiFi] Connected to SUNSTONE</p>
-                    <p class="text-blue-600">[AWS] IoT Core connection ready</p>
+                    <p class="text-blue-600">[AWS] Ready to publish data</p>
                 </div>
             </div>
 
@@ -209,26 +196,17 @@
     </div>
 
     <script>
-        // ============================================
-        // CONFIGURATION
-        // ============================================
         const CONFIG = {
             API_ENDPOINT: 'https://b0gtlz3zrj.execute-api.ap-southeast-1.amazonaws.com/prod',
             DEVICE_ID: 'ESP01',
         };
 
-        // ============================================
-        // GLOBAL STATE
-        // ============================================
         let rockerSwitchActive = false;
         let publishInterval = null;
         let countdownTimer = null;
         let sessionCheckInterval = null;
         let hasActiveSession = false;
 
-        // ============================================
-        // CHECK ACTIVE SESSION
-        // ============================================
         async function checkActiveSession() {
             try {
                 const response = await fetch(`${CONFIG.API_ENDPOINT}/sessions`);
@@ -249,12 +227,9 @@
             }
         }
 
-        // ============================================
-        // ROCKER SWITCH
-        // ============================================
         function toggleRockerSwitch() {
             if (!hasActiveSession) {
-                alert('⚠️ Tidak ada sesi aktif!\n\nSilakan buka sesi di website utama terlebih dahulu (Tab "Sesi Baru")');
+                alert('Tidak ada sesi aktif!\n\nSilakan buka sesi di website utama terlebih dahulu (Tab "Sesi Baru")');
                 return;
             }
 
@@ -342,7 +317,7 @@
             updateOLED([
                 'SUNSTONE PPOK v1.0',
                 '─────────────────────',
-                'WiFi: SUNSTONE ✓',
+                'WiFi: SUNSTONE',
                 'Status: Stopped',
                 '',
                 'Sistema siap',
@@ -352,9 +327,6 @@
             addLog('[System] Stopped sensor transmission', 'yellow');
         }
 
-        // ============================================
-        // SENSOR DATA PUBLISHING (REAL AWS)
-        // ============================================
         async function publishSensorData() {
             const mg811 = parseInt(document.getElementById('mg811').value);
             const mq7 = parseInt(document.getElementById('mq7').value);
@@ -363,7 +335,6 @@
             
             const payload = {
                 device_id: CONFIG.DEVICE_ID,
-                timestamp: new Date().toISOString(),
                 sensors: {
                     raw_mg811: mg811,
                     raw_mq7: mq7,
@@ -378,19 +349,27 @@
             updateOLED([
                 'SUNSTONE PPOK v1.0',
                 '─────────────────────',
-                'Status: PUBLISHING',
+                'Status: SENDING',
                 '',
                 getSensorReadingText(),
                 '',
-                'Sending to AWS...'
+                'Transmitting...'
             ]);
             
-            // NOTE: Because browser can't use MQTT directly, 
-            // the real ESP32 would publish via MQTT.
-            // The Lambda will automatically process via IoT Rule.
-            // We simulate the result display here.
-            
-            setTimeout(() => {
+            try {
+                const response = await fetch(`${CONFIG.API_ENDPOINT}/simulator/publish`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                addLog('[AWS] Data sent to IoT Core', 'green');
+                
                 updateOLED([
                     'SUNSTONE PPOK v1.0',
                     '─────────────────────',
@@ -400,14 +379,11 @@
                     '',
                     'Waiting result...'
                 ]);
-                addLog('[AWS] Data received by IoT Core', 'green');
-                addLog('[Lambda] Processing with ML model...', 'purple');
-            }, 500);
+            } catch (error) {
+                addLog('[Error] Failed to send: ' + error.message, 'red');
+            }
         }
 
-        // ============================================
-        // SENSOR SCENARIOS
-        // ============================================
         function setScenario(risk) {
             switch(risk) {
                 case 'rendah':
@@ -433,9 +409,6 @@
             addLog(`[Scenario] Loaded ${risk} risk preset`, 'purple');
         }
 
-        // ============================================
-        // UI HELPERS
-        // ============================================
         function updateSensorDisplay() {
             document.getElementById('mg811_value').textContent = document.getElementById('mg811').value;
             document.getElementById('mq7_value').textContent = document.getElementById('mq7').value;
@@ -475,16 +448,10 @@
             logPanel.scrollTop = logPanel.scrollHeight;
         }
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
         window.addEventListener('load', () => {
             updateSensorDisplay();
             checkActiveSession();
-            
-            // Check session every 5 seconds
             sessionCheckInterval = setInterval(checkActiveSession, 5000);
-            
             addLog('[Info] Checking for active session...', 'blue');
         });
     </script>
