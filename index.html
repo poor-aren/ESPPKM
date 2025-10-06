@@ -3,457 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Simulator - Sunstone PPOK</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ESP32 Simulator - SUNSTONE</title>
     <style>
-        .oled-screen {
-            background: #1a1a2e;
-            color: #00ff00;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
             padding: 20px;
-            border-radius: 8px;
-            min-height: 200px;
-            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.2);
         }
-        .rocker-switch {
-            width: 80px;
-            height: 40px;
-            background: #e0e0e0;
-            border-radius: 20px;
-            position: relative;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #00ff00;
+        }
+
+        .header h1 {
+            color: #00ff00;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+
+        .panel-title {
+            color: #00ff00;
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+        }
+
+        .oled-screen {
+            background: #000;
+            border: 3px solid #555;
+            border-radius: 5px;
+            padding: 15px;
+            height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #0ff;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .oled-line {
+            margin: 2px 0;
+        }
+
+        .oled-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-control {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+
+        .sensor-label {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .sensor-value {
+            color: #00ff00;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            background: #444;
+            outline: none;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #00ff00;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-        .rocker-switch.active {
-            background: #4CAF50;
-        }
-        .rocker-switch::after {
-            content: '';
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            background: white;
             border-radius: 50%;
-            top: 4px;
-            left: 4px;
-            transition: all 0.3s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .rocker-switch.active::after {
-            left: 44px;
+
+        .button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .button:hover {
+            background: #00cc00;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.danger {
+            background: #ff0000;
+            color: #fff;
+        }
+
+        .button.danger:hover {
+            background: #cc0000;
+        }
+
+        .button:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+        }
+
+        .status-led.active {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .log-panel {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-time {
+            color: #666;
+        }
+
+        .log-error {
+            color: #ff0000;
+        }
+
+        .log-success {
+            color: #00ff00;
+        }
+
+        .log-info {
+            color: #0ff;
+        }
+
+        .config-section {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .config-item {
+            margin-bottom: 10px;
+        }
+
+        .config-label {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .config-value {
+            color: #00ff00;
+            font-size: 14px;
+            background: #000;
+            padding: 8px;
+            border-radius: 3px;
+            border: 1px solid #444;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="min-h-screen py-8">
-        <div class="max-w-4xl mx-auto">
-            
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-yellow-700">
-                            <strong>PENTING:</strong> Pastikan sudah membuka sesi di website utama terlebih dahulu!
-                        </p>
-                    </div>
-                </div>
-            </div>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ESP32 SIMULATOR - SUNSTONE</h1>
+            <p>Virtual IoT Device for Testing | Device ID: ESP01</p>
+        </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800">ESP32 Simulator</h1>
-                        <p class="text-gray-600 mt-1">Sunstone PPOK Detection System</p>
-                    </div>
-                    <div>
-                        <div class="flex items-center space-x-2 mb-2">
-                            <div id="wifiStatus" class="w-4 h-4 bg-green-500 rounded-full"></div>
-                            <span class="text-sm text-gray-600">WiFi Connected</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div id="awsStatus" class="w-4 h-4 bg-blue-500 rounded-full"></div>
-                            <span class="text-sm text-gray-600">AWS Ready</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">ESP32 Device</h2>
+        <div class="main-grid">
+            <!-- Left Panel: Device Control -->
+            <div>
+                <div class="panel">
+                    <div class="panel-title">OLED DISPLAY (128x64)</div>
                     
-                    <div class="oled-screen mb-6">
-                        <div id="oledDisplay" class="text-sm leading-relaxed">
-                            <p>SUNSTONE PPOK v1.0</p>
-                            <p>─────────────────────</p>
-                            <p>WiFi: SUNSTONE</p>
-                            <p>AWS: Connected</p>
-                            <p></p>
-                            <p>Sistema siap</p>
-                            <p>Tekan rocker switch...</p>
+                    <div class="oled-screen" id="oledScreen">
+                        <div class="oled-title">SUNSTONE</div>
+                        <div class="oled-line" style="text-align:center;">Booting...</div>
+                    </div>
+
+                    <div class="status-bar">
+                        <div class="status-item">
+                            <div class="status-led" id="wifiLed"></div>
+                            <span>WiFi</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-led" id="mqttLed"></div>
+                            <span>MQTT</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-led" id="sessionLed"></div>
+                            <span>Session</span>
                         </div>
                     </div>
 
-                    <div class="text-center mb-4">
-                        <p class="text-sm text-gray-600 mb-2">Rocker Switch</p>
-                        <div id="rockerSwitch" class="rocker-switch mx-auto" onclick="toggleRockerSwitch()"></div>
-                        <p id="switchStatus" class="text-xs text-gray-500 mt-2">OFF</p>
-                    </div>
+                    <button class="button" id="startBtn" onclick="startTest()">
+                        START TEST (Rocker Switch)
+                    </button>
 
-                    <div id="sessionWarning" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 hidden">
-                        <p class="text-sm text-red-700">Tidak ada sesi aktif! Buka sesi di website terlebih dahulu.</p>
-                    </div>
-
-                    <div id="sessionActive" class="bg-green-50 border border-green-200 rounded-lg p-3 hidden">
-                        <p class="text-sm text-green-700">Sesi aktif terdeteksi! Siap mengirim data.</p>
-                    </div>
+                    <button class="button danger" id="stopBtn" onclick="stopTest()" disabled>
+                        STOP TEST
+                    </button>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Sensor Controls</h2>
+                <div class="panel">
+                    <div class="panel-title">SENSOR CONTROLS</div>
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            MG811 (CO2): <span id="mg811_value" class="font-bold text-blue-600">300</span>
-                        </label>
-                        <input type="range" id="mg811" min="100" max="500" value="300" 
-                            class="w-full" oninput="updateSensorDisplay()">
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>100</span>
-                            <span>500</span>
+                    <div class="sensor-grid">
+                        <div class="sensor-control">
+                            <div class="sensor-label">MG811 - CO2</div>
+                            <div class="sensor-value" id="valueMG811">300</div>
+                            <input type="range" id="sliderMG811" min="200" max="600" value="300" oninput="updateSensor('MG811', this.value)">
+                        </div>
+
+                        <div class="sensor-control">
+                            <div class="sensor-label">MQ7 - CO</div>
+                            <div class="sensor-value" id="valueMQ7">80</div>
+                            <input type="range" id="sliderMQ7" min="50" max="150" value="80" oninput="updateSensor('MQ7', this.value)">
+                        </div>
+
+                        <div class="sensor-control">
+                            <div class="sensor-label">MQ3 - Alcohol</div>
+                            <div class="sensor-value" id="valueMQ3">60</div>
+                            <input type="range" id="sliderMQ3" min="30" max="120" value="60" oninput="updateSensor('MQ3', this.value)">
+                        </div>
+
+                        <div class="sensor-control">
+                            <div class="sensor-label">MQ135 - Air Quality</div>
+                            <div class="sensor-value" id="valueMQ135">220</div>
+                            <input type="range" id="sliderMQ135" min="150" max="350" value="220" oninput="updateSensor('MQ135', this.value)">
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            MQ7 (CO): <span id="mq7_value" class="font-bold text-blue-600">70</span>
-                        </label>
-                        <input type="range" id="mq7" min="30" max="150" value="70" 
-                            class="w-full" oninput="updateSensorDisplay()">
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>30</span>
-                            <span>150</span>
-                        </div>
-                    </div>
+                    <button class="button" onclick="randomizeSensors()">
+                        RANDOMIZE SENSORS
+                    </button>
+                </div>
+            </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            MQ3 (Alcohol): <span id="mq3_value" class="font-bold text-blue-600">50</span>
-                        </label>
-                        <input type="range" id="mq3" min="20" max="100" value="50" 
-                            class="w-full" oninput="updateSensorDisplay()">
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>20</span>
-                            <span>100</span>
+            <!-- Right Panel: Logs & Config -->
+            <div>
+                <div class="panel">
+                    <div class="panel-title">CONFIGURATION</div>
+                    
+                    <div class="config-section">
+                        <div class="config-item">
+                            <div class="config-label">AWS IoT Endpoint</div>
+                            <div class="config-value">a2vg3urkg4mky6-ats.iot.ap-southeast-1.amazonaws.com</div>
                         </div>
-                    </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            MQ135 (Air Quality): <span id="mq135_value" class="font-bold text-blue-600">200</span>
-                        </label>
-                        <input type="range" id="mq135" min="100" max="400" value="200" 
-                            class="w-full" oninput="updateSensorDisplay()">
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>100</span>
-                            <span>400</span>
+                        <div class="config-item">
+                            <div class="config-label">API Gateway</div>
+                            <div class="config-value" id="apiEndpoint">https://dd23gtb2nc.execute-api.ap-southeast-1.amazonaws.com</div>
                         </div>
-                    </div>
 
-                    <div class="mt-6">
-                        <p class="text-sm font-medium text-gray-700 mb-2">Preset Scenarios</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="setScenario('rendah')" class="bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200">
-                                Risiko Rendah
-                            </button>
-                            <button onclick="setScenario('sedang')" class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded text-sm hover:bg-yellow-200">
-                                Risiko Sedang
-                            </button>
-                            <button onclick="setScenario('tinggi')" class="bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200">
-                                Risiko Tinggi
-                            </button>
+                        <div class="config-item">
+                            <div class="config-label">Thing Name</div>
+                            <div class="config-value">ESP01</div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">Publish Interval</div>
+                            <div class="config-value">2000ms (2 seconds)</div>
                         </div>
                     </div>
                 </div>
 
-            </div>
-
-            <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Activity Log</h2>
-                <div id="logPanel" class="bg-gray-50 rounded p-4 max-h-64 overflow-y-auto font-mono text-xs space-y-1">
-                    <p class="text-green-600">[System] ESP32 Simulator initialized</p>
-                    <p class="text-green-600">[WiFi] Connected to SUNSTONE</p>
-                    <p class="text-blue-600">[AWS] Ready to publish data</p>
+                <div class="panel">
+                    <div class="panel-title">SERIAL MONITOR</div>
+                    
+                    <div class="log-panel" id="logPanel">
+                        <div class="log-entry log-info">
+                            <span class="log-time">[00:00:00]</span> SUNSTONE ESP32 Simulator Started
+                        </div>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
+        // Configuration
         const CONFIG = {
-            API_ENDPOINT: 'https://b0gtlz3zrj.execute-api.ap-southeast-1.amazonaws.com/prod',
-            DEVICE_ID: 'ESP01',
+            apiEndpoint: 'https://dd23gtb2nc.execute-api.ap-southeast-1.amazonaws.com',
+            deviceId: 'ESP01',
+            publishInterval: 2000
         };
 
-        let rockerSwitchActive = false;
+        // State
+        let testRunning = false;
         let publishInterval = null;
-        let countdownTimer = null;
-        let sessionCheckInterval = null;
-        let hasActiveSession = false;
+        let sensorValues = {
+            mg811: 300,
+            mq7: 80,
+            mq3: 60,
+            mq135: 220
+        };
 
-        async function checkActiveSession() {
-            try {
-                const response = await fetch(`${CONFIG.API_ENDPOINT}/sessions`);
-                const sessions = await response.json();
-                
-                hasActiveSession = sessions.some(s => s.status === 'OPEN');
-                
-                if (hasActiveSession) {
-                    document.getElementById('sessionWarning').classList.add('hidden');
-                    document.getElementById('sessionActive').classList.remove('hidden');
-                    addLog('[Session] Active session detected', 'green');
-                } else {
-                    document.getElementById('sessionWarning').classList.remove('hidden');
-                    document.getElementById('sessionActive').classList.add('hidden');
-                }
-            } catch (error) {
-                addLog('[Error] Cannot check session status', 'red');
-            }
-        }
-
-        function toggleRockerSwitch() {
-            if (!hasActiveSession) {
-                alert('Tidak ada sesi aktif!\n\nSilakan buka sesi di website utama terlebih dahulu (Tab "Sesi Baru")');
-                return;
-            }
-
-            rockerSwitchActive = !rockerSwitchActive;
-            const rocker = document.getElementById('rockerSwitch');
-            const status = document.getElementById('switchStatus');
+        // Initialize
+        window.onload = function() {
+            log('System initialized', 'info');
+            log('Connecting to WiFi...', 'info');
             
-            if (rockerSwitchActive) {
-                rocker.classList.add('active');
-                status.textContent = 'ON';
-                startCountdown();
-            } else {
-                rocker.classList.remove('active');
-                status.textContent = 'OFF';
-                stopPublishing();
-            }
-        }
-
-        function startCountdown() {
-            let countdown = 5;
-            
-            updateOLED([
-                'SUNSTONE PPOK v1.0',
-                '─────────────────────',
-                'Bersiap...',
-                '',
-                `Starting in ${countdown}s`,
-                '',
-                'Please wait...'
-            ]);
-            
-            addLog('[Switch] Rocker switch activated', 'blue');
-            addLog(`[System] Countdown: ${countdown} seconds`, 'yellow');
-            
-            countdownTimer = setInterval(() => {
-                countdown--;
-                
-                updateOLED([
-                    'SUNSTONE PPOK v1.0',
-                    '─────────────────────',
-                    'Bersiap...',
-                    '',
-                    `Starting in ${countdown}s`,
-                    '',
-                    'Please wait...'
-                ]);
-                
-                addLog(`[System] Countdown: ${countdown} seconds`, 'yellow');
-                
-                if (countdown <= 0) {
-                    clearInterval(countdownTimer);
-                    startPublishing();
-                }
+            setTimeout(() => {
+                document.getElementById('wifiLed').classList.add('active');
+                log('WiFi connected', 'success');
+                updateOLED('READY', 'Press START');
             }, 1000);
+
+            // Simulate MQTT connection
+            setTimeout(() => {
+                document.getElementById('mqttLed').classList.add('active');
+                log('MQTT connected to AWS IoT', 'success');
+            }, 2000);
+        };
+
+        // Update sensor display
+        function updateSensor(sensor, value) {
+            const key = sensor.toLowerCase();
+            sensorValues[key] = parseInt(value);
+            document.getElementById('value' + sensor).textContent = value;
         }
 
-        function startPublishing() {
-            addLog('[System] Starting sensor data transmission', 'green');
-            
-            updateOLED([
-                'SUNSTONE PPOK v1.0',
-                '─────────────────────',
-                'Status: ACTIVE',
-                'Publishing data...',
-                '',
-                'Sensor readings:',
-                getSensorReadingText()
-            ]);
-            
-            publishSensorData();
-            publishInterval = setInterval(publishSensorData, 2000);
-        }
+        // Randomize sensors
+        function randomizeSensors() {
+            const ranges = {
+                mg811: [200, 600],
+                mq7: [50, 150],
+                mq3: [30, 120],
+                mq135: [150, 350]
+            };
 
-        function stopPublishing() {
-            if (publishInterval) {
-                clearInterval(publishInterval);
-                publishInterval = null;
+            for (const [sensor, range] of Object.entries(ranges)) {
+                const value = Math.floor(Math.random() * (range[1] - range[0]) + range[0]);
+                sensorValues[sensor] = value;
+                
+                const sensorUpper = sensor.toUpperCase().replace('MQ', 'MQ');
+                document.getElementById('slider' + sensorUpper.replace('MG', 'MG')).value = value;
+                document.getElementById('value' + sensorUpper.replace('MG', 'MG')).textContent = value;
             }
             
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-                countdownTimer = null;
-            }
-            
-            updateOLED([
-                'SUNSTONE PPOK v1.0',
-                '─────────────────────',
-                'WiFi: SUNSTONE',
-                'Status: Stopped',
-                '',
-                'Sistema siap',
-                'Tekan rocker switch...'
-            ]);
-            
-            addLog('[System] Stopped sensor transmission', 'yellow');
+            log('Sensors randomized', 'info');
         }
 
-        async function publishSensorData() {
-            const mg811 = parseInt(document.getElementById('mg811').value);
-            const mq7 = parseInt(document.getElementById('mq7').value);
-            const mq3 = parseInt(document.getElementById('mq3').value);
-            const mq135 = parseInt(document.getElementById('mq135').value);
+        // Start test
+        function startTest() {
+            if (testRunning) return;
             
+            testRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('sessionLed').classList.add('active');
+            
+            log('>>> TEST STARTED <<<', 'success');
+            updateOLED('TESTING', 'Sending data...');
+            
+            // Start publishing
+            publishData();
+            publishInterval = setInterval(publishData, CONFIG.publishInterval);
+        }
+
+        // Stop test
+        function stopTest() {
+            if (!testRunning) return;
+            
+            testRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('sessionLed').classList.remove('active');
+            
+            clearInterval(publishInterval);
+            
+            log('>>> TEST STOPPED <<<', 'info');
+            updateOLED('READY', 'Press START');
+        }
+
+        // Publish sensor data
+        async function publishData() {
             const payload = {
-                device_id: CONFIG.DEVICE_ID,
+                device_id: CONFIG.deviceId,
+                timestamp: new Date().toISOString(),
                 sensors: {
-                    raw_mg811: mg811,
-                    raw_mq7: mq7,
-                    raw_mq3: mq3,
-                    raw_mq135: mq135
+                    raw_mg811: sensorValues.mg811,
+                    raw_mq7: sensorValues.mq7,
+                    raw_mq3: sensorValues.mq3,
+                    raw_mq135: sensorValues.mq135
                 }
             };
-            
-            addLog(`[MQTT] Publishing to devices/${CONFIG.DEVICE_ID}/sensor`, 'blue');
-            addLog(`[Data] MG811:${mg811} MQ7:${mq7} MQ3:${mq3} MQ135:${mq135}`, 'gray');
-            
-            updateOLED([
-                'SUNSTONE PPOK v1.0',
-                '─────────────────────',
-                'Status: SENDING',
-                '',
-                getSensorReadingText(),
-                '',
-                'Transmitting...'
-            ]);
-            
+
+            log('Publishing: ' + JSON.stringify(payload.sensors), 'info');
+
+            // Simulate sending via Lambda (bypass IoT Core for simulator)
             try {
-                const response = await fetch(`${CONFIG.API_ENDPOINT}/simulator/publish`, {
+                const response = await fetch(`${CONFIG.apiEndpoint}/simulator/ingest`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+
+                if (response.ok) {
+                    log('Data sent successfully', 'success');
+                    updateOLEDTest();
+                } else {
+                    log('Failed to send data: ' + response.status, 'error');
                 }
-                
-                const result = await response.json();
-                addLog('[AWS] Data sent to IoT Core', 'green');
-                
-                updateOLED([
-                    'SUNSTONE PPOK v1.0',
-                    '─────────────────────',
-                    'Status: SENT',
-                    '',
-                    getSensorReadingText(),
-                    '',
-                    'Waiting result...'
-                ]);
             } catch (error) {
-                addLog('[Error] Failed to send: ' + error.message, 'red');
+                log('Network error: ' + error.message, 'error');
             }
         }
 
-        function setScenario(risk) {
-            switch(risk) {
-                case 'rendah':
-                    document.getElementById('mg811').value = 180;
-                    document.getElementById('mq7').value = 45;
-                    document.getElementById('mq3').value = 30;
-                    document.getElementById('mq135').value = 120;
-                    break;
-                case 'sedang':
-                    document.getElementById('mg811').value = 300;
-                    document.getElementById('mq7').value = 80;
-                    document.getElementById('mq3').value = 55;
-                    document.getElementById('mq135').value = 200;
-                    break;
-                case 'tinggi':
-                    document.getElementById('mg811').value = 420;
-                    document.getElementById('mq7').value = 120;
-                    document.getElementById('mq3').value = 85;
-                    document.getElementById('mq135').value = 330;
-                    break;
-            }
-            updateSensorDisplay();
-            addLog(`[Scenario] Loaded ${risk} risk preset`, 'purple');
+        // Update OLED display
+        function updateOLED(title, message) {
+            const screen = document.getElementById('oledScreen');
+            screen.innerHTML = `
+                <div class="oled-title">${title}</div>
+                <div class="oled-line" style="text-align:center; margin-top:10px;">${message}</div>
+            `;
         }
 
-        function updateSensorDisplay() {
-            document.getElementById('mg811_value').textContent = document.getElementById('mg811').value;
-            document.getElementById('mq7_value').textContent = document.getElementById('mq7').value;
-            document.getElementById('mq3_value').textContent = document.getElementById('mq3').value;
-            document.getElementById('mq135_value').textContent = document.getElementById('mq135').value;
+        function updateOLEDTest() {
+            const screen = document.getElementById('oledScreen');
+            screen.innerHTML = `
+                <div class="oled-title">TESTING</div>
+                <div style="font-size:12px;">
+                    <div class="oled-line">CO2: ${sensorValues.mg811}</div>
+                    <div class="oled-line">CO:  ${sensorValues.mq7}</div>
+                    <div class="oled-line">ALC: ${sensorValues.mq3}</div>
+                    <div class="oled-line">AIR: ${sensorValues.mq135}</div>
+                </div>
+            `;
         }
 
-        function getSensorReadingText() {
-            const mg811 = document.getElementById('mg811').value;
-            const mq7 = document.getElementById('mq7').value;
-            const mq3 = document.getElementById('mq3').value;
-            const mq135 = document.getElementById('mq135').value;
-            return `MG811:${mg811} MQ7:${mq7}\nMQ3:${mq3} MQ135:${mq135}`;
-        }
-
-        function updateOLED(lines) {
-            document.getElementById('oledDisplay').innerHTML = lines.map(line => `<p>${line}</p>`).join('');
-        }
-
-        function addLog(message, color = 'gray') {
-            const logPanel = document.getElementById('logPanel');
-            const timestamp = new Date().toLocaleTimeString('id-ID');
-            const colorClass = {
-                'blue': 'text-blue-600',
-                'green': 'text-green-600',
-                'yellow': 'text-yellow-600',
-                'red': 'text-red-600',
-                'purple': 'text-purple-600',
-                'gray': 'text-gray-600'
-            };
+        // Logging
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const panel = document.getElementById('logPanel');
             
-            const logEntry = document.createElement('p');
-            logEntry.className = colorClass[color] || 'text-gray-600';
-            logEntry.textContent = `[${timestamp}] ${message}`;
+            const entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
             
-            logPanel.appendChild(logEntry);
-            logPanel.scrollTop = logPanel.scrollHeight;
+            panel.appendChild(entry);
+            panel.scrollTop = panel.scrollHeight;
         }
 
-        window.addEventListener('load', () => {
-            updateSensorDisplay();
-            checkActiveSession();
-            sessionCheckInterval = setInterval(checkActiveSession, 5000);
-            addLog('[Info] Checking for active session...', 'blue');
-        });
+        // Simulate receiving result from backend
+        function simulateResult(category, confidence) {
+            const screen = document.getElementById('oledScreen');
+            screen.innerHTML = `
+                <div class="oled-title">RESULT</div>
+                <div style="text-align:center; font-size:18px; margin:15px 0;">
+                    ${category}
+                </div>
+                <div style="text-align:center; font-size:12px;">
+                    Conf: ${confidence}%
+                </div>
+            `;
+            
+            log(`Result received: ${category} (${confidence}%)`, 'success');
+            stopTest();
+        }
+
+        // Expose for external testing
+        window.simulateResult = simulateResult;
     </script>
 </body>
 </html>
