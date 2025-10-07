@@ -1,151 +1,370 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ESP32 Simulator (Publish via API → IoT)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESP32 Simulator — SUNSTONE</title>
 <style>
-  body{font-family:Segoe UI,system-ui,Arial,sans-serif;background:#0f172a;color:#e5e7eb;margin:0;padding:24px}
-  .card{max-width:720px;margin:0 auto;background:#111827;border:1px solid #1f2937;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-  .hdr{padding:18px 20px;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center}
-  .hdr h1{font-size:18px;margin:0;color:#a5b4fc}
-  .cnt{padding:20px}
-  .row{display:flex;gap:12px;margin-bottom:12px}
+  :root{--pri:#3b4998}
+  *{box-sizing:border-box}
+  body{font-family:Segoe UI,system-ui,-apple-system,Arial;background:#f5f6fa;color:#222;margin:0;padding:24px}
+  .wrap{max-width:900px;margin:auto}
+  .card{background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);padding:18px;margin-bottom:18px}
+  h1{margin:0 0 6px;color:var(--pri)}
+  h2{margin:0 0 12px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
   .col{flex:1}
-  label{font-size:12px;color:#94a3b8;display:block;margin-bottom:6px}
-  input[type=number]{width:100%;padding:10px;border-radius:10px;border:1px solid #374151;background:#0b1220;color:#e5e7eb}
-  .btn{border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
-  .btn[disabled]{opacity:.5;cursor:not-allowed}
-  .btn-primary{background:#6366f1;color:#fff}
-  .btn-line{background:#0b1220;border:1px solid #334155;color:#e5e7eb}
-  .muted{color:#94a3b8}
-  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .log{background:#0b1220;border:1px dashed #334155;border-radius:10px;padding:12px;max-height:220px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12px}
-  .ok{color:#22c55e}.warn{color:#f59e0b}.err{color:#ef4444}
+  label{display:block;font-weight:600;margin-bottom:6px}
+  input[type="text"],input[type="number"]{width:100%;padding:10px;border:2px solid #e3e6ef;border-radius:8px}
+  .btn{border:0;border-radius:8px;padding:10px 14px;font-weight:600;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn-pri{background:var(--pri);color:#fff}
+  .btn-sec{background:#eef1fb;color:#223}
+  .btn-dan{background:#dc3545;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  .ok{background:#d4edda;color:#155724}
+  .warn{background:#fff3cd;color:#856404}
+  .err{background:#f8d7da;color:#721c24}
+  .muted{color:#666;font-size:13px}
+  .log{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0b1220;color:#cfe3ff;border-radius:10px;padding:10px;max-height:240px;overflow:auto}
+  .log b{color:#8dd2ff}
+  .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .spacer{height:8px}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="hdr">
+<div class="wrap">
+  <div class="card">
     <h1>ESP32 Simulator</h1>
-    <div class="muted" id="status">Init…</div>
+    <div class="muted">Mengirim data sensor ke backend kamu melalui <b>POST /session/{id}/sensor</b>.</div>
   </div>
-  <div class="cnt">
-    <!-- CONFIG -->
-    <div class="grid" style="margin-bottom:8px">
-      <div>
+
+  <!-- KONFIGURASI -->
+  <div class="card">
+    <h2>Konfigurasi</h2>
+    <div class="row">
+      <div class="col">
         <label>API URL</label>
-        <input id="apiUrl" value="https://8308ialq3d.execute-api.ap-southeast-1.amazonaws.com/tros-20251007091134-4239">
+        <input id="apiUrl" type="text" placeholder="https://...execute-api....amazonaws.com/{stage}">
+      </div>
+      <div class="col">
+        <label>API Key</label>
+        <input id="apiKey" type="text" placeholder="xxxxxxxx">
+      </div>
+      <div class="col" style="max-width:220px">
+        <label>Device ID</label>
+        <input id="deviceId" type="text" placeholder="ESP01">
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="inline">
+      <button class="btn btn-sec" id="saveCfgBtn">Simpan</button>
+      <span id="cfgStatus" class="pill warn">Belum tersambung</span>
+      <span class="muted">Tip: isi & simpan, lalu klik “Cari Sesi OPEN”.</span>
+    </div>
+  </div>
+
+  <!-- STATUS SESI -->
+  <div class="card">
+    <h2>Status Sesi</h2>
+    <div class="inline">
+      <button class="btn btn-pri" id="findOpenBtn">Cari Sesi OPEN</button>
+      <div id="sessionPill" class="pill warn">Tidak ada sesi</div>
+    </div>
+    <div class="muted" id="sessionInfo">Belum memeriksa.</div>
+  </div>
+
+  <!-- NILAI SENSOR -->
+  <div class="card">
+    <h2>Input Sensor</h2>
+    <div class="grid">
+      <div>
+        <label>S1</label>
+        <input id="s1" type="number" value="10" step="1">
       </div>
       <div>
-        <label>API Key</label>
-        <input id="apiKey" value="75179e4b24c0179f1806d2a18707e7cb">
+        <label>S2</label>
+        <input id="s2" type="number" value="20" step="1">
+      </div>
+      <div>
+        <label>S3</label>
+        <input id="s3" type="number" value="30" step="1">
+      </div>
+      <div>
+        <label>S4</label>
+        <input id="s4" type="number" value="40" step="1">
       </div>
     </div>
+    <div class="spacer"></div>
     <div class="row">
       <div class="col">
-        <label>Device ID</label>
-        <input id="deviceId" value="ESP01">
+        <label>Mode</label>
+        <div class="inline">
+          <button class="btn btn-sec" id="randOffBtn">Manual</button>
+          <button class="btn btn-sec" id="randOnBtn">Acak ±5</button>
+          <span id="randPill" class="pill warn">Manual</span>
+        </div>
       </div>
-      <div class="col">
-        <label>OPEN Session ID (auto)</label>
-        <input id="sessionId" placeholder="(auto-lookup)" readonly>
+      <div class="col" style="max-width:220px">
+        <label>Interval (ms)</label>
+        <input id="interval" type="number" value="1000" min="200" step="100">
       </div>
     </div>
+  </div>
 
-    <hr style="border:0;border-top:1px solid #1f2937;margin:14px 0">
-
-    <!-- SENSOR VALUES -->
-    <div class="row">
-      <div class="col"><label>Sensor 1</label><input type="number" id="s1" value="10"></div>
-      <div class="col"><label>Sensor 2</label><input type="number" id="s2" value="20"></div>
+  <!-- KONTROL -->
+  <div class="card">
+    <h2>Kirim</h2>
+    <div class="inline">
+      <button class="btn btn-pri" id="sendOnceBtn">Kirim Sekali</button>
+      <button class="btn btn-pri" id="autoBtn">Mulai Auto</button>
+      <button class="btn btn-dan" id="stopBtn" disabled>Stop</button>
+      <span id="sendPill" class="pill warn">Idle</span>
     </div>
-    <div class="row">
-      <div class="col"><label>Sensor 3</label><input type="number" id="s3" value="30"></div>
-      <div class="col"><label>Sensor 4</label><input type="number" id="s4" value="40"></div>
-    </div>
+    <div class="spacer"></div>
+    <div class="muted">Simulator <b>tidak akan membuka sesi baru</b>. Jika tidak ada sesi OPEN, buka dari web user dulu.</div>
+  </div>
 
-    <div class="row" style="margin-top:8px">
-      <button id="btnSend" class="btn btn-primary" disabled>Kirim Sekali</button>
-      <button id="btnAuto" class="btn btn-line" disabled>Auto 1/detik: OFF</button>
-      <button id="btnRefresh" class="btn btn-line">Refresh OPEN Session</button>
-    </div>
-
-    <p class="muted" style="margin:10px 2px 0">Catatan: Simulator hanya kirim bila ada <b>1 sesi OPEN</b> (sesuai aturan). Payload masuk ke IoT dengan flag <code>sim:true</code>.</p>
-
-    <h3 style="margin:14px 4px 8px">Log</h3>
+  <!-- LOG -->
+  <div class="card">
+    <h2>Log</h2>
     <div id="log" class="log"></div>
   </div>
 </div>
 
 <script>
-function logln(msg, cls){const box=document.getElementById('log');const d=document.createElement('div');d.textContent='['+new Date().toLocaleTimeString()+'] '+msg; if(cls) d.className=cls; box.prepend(d); while(box.children.length>150) box.removeChild(box.lastChild);}
-function setStatus(txt, cls){const s=document.getElementById('status'); s.textContent=txt; s.className=cls||'';}
+/* ====== CONFIG (ISI PUNYAMU) ========================================== */
+const API = {
+  url: "https://8308ialq3d.execute-api.ap-southeast-1.amazonaws.com/tros-20251007091134-4239", // <- ganti bila perlu
+  key: "75179e4b24c0179f1806d2a18707e7cb",                                                   // <- ganti bila perlu
+  deviceId: "ESP01"                                                                           // <- ganti bila perlu
+};
+/* ===================================================================== */
 
-async function api(path, method='GET', body=null){
-  const url=document.getElementById('apiUrl').value.trim();
-  const key=document.getElementById('apiKey').value.trim();
-  const opt={method,headers:{'content-type':'application/json','x-api-key':key}};
-  if(body) opt.body=JSON.stringify(body);
-  const r=await fetch(url+path,opt);
-  if(!r.ok){throw new Error(`${method} ${path} -> ${r.status} ${await r.text()}`)}
-  return r.json();
+const els = {
+  apiUrl: document.getElementById('apiUrl'),
+  apiKey: document.getElementById('apiKey'),
+  deviceId: document.getElementById('deviceId'),
+  saveCfgBtn: document.getElementById('saveCfgBtn'),
+  cfgStatus: document.getElementById('cfgStatus'),
+  findOpenBtn: document.getElementById('findOpenBtn'),
+  sessionPill: document.getElementById('sessionPill'),
+  sessionInfo: document.getElementById('sessionInfo'),
+  s: [document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3'),document.getElementById('s4')],
+  randOffBtn: document.getElementById('randOffBtn'),
+  randOnBtn: document.getElementById('randOnBtn'),
+  randPill: document.getElementById('randPill'),
+  interval: document.getElementById('interval'),
+  sendOnceBtn: document.getElementById('sendOnceBtn'),
+  autoBtn: document.getElementById('autoBtn'),
+  stopBtn: document.getElementById('stopBtn'),
+  sendPill: document.getElementById('sendPill'),
+  log: document.getElementById('log'),
+};
+
+const LS = {
+  url: 'sim.apiUrl', key: 'sim.apiKey', dev: 'sim.deviceId', rand:'sim.rand', it:'sim.interval'
+};
+
+let state = {
+  sessionId: null,
+  autoTimer: null,
+  randomMode: localStorage.getItem(LS.rand) === '1',
+  consecutiveFails: 0
+};
+
+function log(msg, kind='info'){
+  const ts = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.innerHTML = kind==='err' ? `<b>[${ts}]</b> ❌ ${msg}` :
+                   kind==='ok'  ? `<b>[${ts}]</b> ✅ ${msg}` :
+                                  `<b>[${ts}]</b> ${msg}`;
+  els.log.prepend(line);
+  while (els.log.childElementCount > 300) els.log.removeChild(els.log.lastChild);
 }
 
-async function findOpenSessionForDevice(){
-  const dev=document.getElementById('deviceId').value.trim();
-  const hist=await api('/history','GET');
-  const open=(hist.patients||[]).find(p=>p.status==='OPEN' && p.device_id===dev);
-  return open ? open.id : null;
+function setPill(el, cls, text){
+  el.className = `pill ${cls}`;
+  el.textContent = text;
 }
 
-async function refreshOpen(){
+function headers(){ return {'content-type':'application/json','x-api-key': els.apiKey.value.trim()}; }
+
+async function call(path, method='GET', body=null){
+  const res = await fetch(els.apiUrl.value.trim() + path, {
+    method, headers: headers(), body: body ? JSON.stringify(body) : undefined,
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=>`${res.status}`);
+    throw new Error(`${method} ${path} -> ${res.status} ${t}`);
+  }
+  return res.json();
+}
+
+async function ping(){
   try{
-    setStatus('Mencari sesi OPEN…','warn');
-    const sid=await findOpenSessionForDevice();
-    document.getElementById('sessionId').value = sid || '';
-    const enabled = !!sid;
-    document.getElementById('btnSend').disabled = !enabled;
-    document.getElementById('btnAuto').disabled = !enabled;
-    setStatus(enabled?'READY (OPEN: '+sid+')':'Tidak ada sesi OPEN','ok');
-    logln(enabled?'OPEN session: '+sid:'Tidak ada sesi OPEN untuk device ini', enabled?'ok':'warn');
+    const t0 = performance.now();
+    const js = await call('/history','GET');
+    const ms = Math.round(performance.now()-t0);
+    setPill(els.cfgStatus,'ok',`API OK (${ms}ms)`);
+    log(`API /history OK (${ms}ms), patients=${(js.patients||[]).length}`,'ok');
+    return js;
   }catch(e){
-    setStatus('API error','err'); logln(e.message,'err');
+    setPill(els.cfgStatus,'err','API gagal');
+    log(`API check gagal: ${e.message}`,'err');
+    throw e;
   }
 }
 
+async function findOpen(){
+  setPill(els.sessionPill,'warn','Mencari…');
+  els.sessionInfo.textContent = 'Memeriksa /history...';
+  try{
+    const js = await ping();
+    const open = (js.patients||[]).find(p=>p.status==='OPEN');
+    if(!open){
+      state.sessionId = null;
+      setPill(els.sessionPill,'err','Tidak ada sesi OPEN');
+      els.sessionInfo.textContent = 'Buka sesi dari web user dulu.';
+      log('Tidak ada sesi OPEN.','err');
+      toggleSendUI(false);
+      return;
+    }
+    // opsional: validasi device id konsisten dengan sesi
+    if(open.device_id && open.device_id !== els.deviceId.value.trim()){
+      log(`Peringatan: device sesi=${open.device_id}, tapi simulator diset ${els.deviceId.value.trim()}`,'err');
+    }
+    state.sessionId = open.id;
+    setPill(els.sessionPill,'ok',`OPEN: ${state.sessionId}`);
+    els.sessionInfo.textContent = `sessionStart: ${open.sessionStart || '-'}`;
+    log(`OPEN session: ${state.sessionId}`,'ok');
+    toggleSendUI(true);
+  }catch(e){
+    state.sessionId = null;
+    setPill(els.sessionPill,'err','Gagal cek sesi');
+    els.sessionInfo.textContent = e.message;
+    toggleSendUI(false);
+  }
+}
+
+function toggleSendUI(enabled){
+  els.sendOnceBtn.disabled = !enabled;
+  els.autoBtn.disabled = !enabled;
+  if(!enabled){ stopAuto(); }
+}
+
+function randAround(v){ return v + (Math.random()*10-5)|0; }
+
 function readValues(){
-  const v = [Number(s1.value),Number(s2.value),Number(s3.value),Number(s4.value)];
-  if(v.some(x=>!isFinite(x))) throw new Error('Nilai sensor tidak valid');
-  return v;
+  const vals = els.s.map(x=>Number(x.value||0));
+  if(state.randomMode){
+    for(let i=0;i<vals.length;i++) vals[i] = randAround(vals[i]);
+  }
+  return vals;
 }
 
 async function sendOnce(){
-  const sid=document.getElementById('sessionId').value.trim();
-  if(!sid){ logln('No OPEN session','warn'); return; }
-  const vals = readValues();
+  if(!state.sessionId){ log('Tidak ada sesi OPEN.','err'); return; }
+  const values = readValues();
   const ts = new Date().toISOString();
   try{
-    const res = await api(`/session/${encodeURIComponent(sid)}/sensor`, 'POST', { values: vals, timestamp: ts });
-    logln('Publish OK ts='+ts+' values='+JSON.stringify(vals),'ok');
+    const r = await call(`/session/${encodeURIComponent(state.sessionId)}/sensor`, 'POST', { values, timestamp: ts });
+    log(`Publish OK → ${JSON.stringify(r.published||{})}`,'ok');
+    state.consecutiveFails = 0;
+    setPill(els.sendPill,'ok','Last OK');
   }catch(e){
-    logln('Gagal publish: '+e.message,'err');
+    state.consecutiveFails++;
+    log('Gagal publish: ' + e.message, 'err');
+    setPill(els.sendPill,'err','Error');
+    // auto stop kalau gagal 5x berturut
+    if(state.autoTimer && state.consecutiveFails >= 5){
+      log('Auto dihentikan (gagal 5x).','err');
+      stopAuto();
+    }
   }
 }
 
-let autoTimer=null;
-async function toggleAuto(){
-  const btn=document.getElementById('btnAuto');
-  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; btn.textContent='Auto 1/detik: OFF'; return; }
-  btn.textContent='Auto 1/detik: ON';
-  autoTimer=setInterval(sendOnce, 1000);
+function startAuto(){
+  if(!state.sessionId){ log('Tidak ada sesi OPEN.','err'); return; }
+  const iv = Math.max(200, Number(els.interval.value||1000));
+  if(state.autoTimer) clearInterval(state.autoTimer);
+  state.autoTimer = setInterval(sendOnce, iv);
+  setPill(els.sendPill,'warn',`Auto ${iv}ms`);
+  els.autoBtn.disabled = true;
+  els.stopBtn.disabled = false;
+  log('Auto start.');
 }
 
-document.getElementById('btnSend').addEventListener('click', sendOnce);
-document.getElementById('btnAuto').addEventListener('click', toggleAuto);
-document.getElementById('btnRefresh').addEventListener('click', refreshOpen);
+function stopAuto(){
+  if(state.autoTimer) clearInterval(state.autoTimer);
+  state.autoTimer = null;
+  els.autoBtn.disabled = false;
+  els.stopBtn.disabled = true;
+  setPill(els.sendPill,'warn','Idle');
+  log('Auto stop.');
+}
 
-(async ()=>{ await refreshOpen(); })();
+function setRandomMode(on){
+  state.randomMode = !!on;
+  localStorage.setItem(LS.rand, on ? '1':'0');
+  setPill(els.randPill, on?'ok':'warn', on?'Acak ±5':'Manual');
+}
+
+function saveCfg(){
+  localStorage.setItem(LS.url, els.apiUrl.value.trim());
+  localStorage.setItem(LS.key, els.apiKey.value.trim());
+  localStorage.setItem(LS.dev, els.deviceId.value.trim());
+  localStorage.setItem(LS.it, els.interval.value.trim());
+  log('Konfigurasi disimpan.'); ping().catch(()=>{});
+}
+
+function loadCfg(){
+  els.apiUrl.value = localStorage.getItem(LS.url) || API.url;
+  els.apiKey.value = localStorage.getItem(LS.key) || API.key;
+  els.deviceId.value = localStorage.getItem(LS.dev) || API.deviceId;
+  els.interval.value = localStorage.getItem(LS.it) || '1000';
+  setRandomMode(localStorage.getItem(LS.rand)==='1');
+}
+
+function wire(){
+  els.saveCfgBtn.onclick = saveCfg;
+  els.findOpenBtn.onclick = findOpen;
+  els.sendOnceBtn.onclick = sendOnce;
+  els.autoBtn.onclick = startAuto;
+  els.stopBtn.onclick = stopAuto;
+  els.randOffBtn.onclick = ()=>setRandomMode(false);
+  els.randOnBtn.onclick = ()=>setRandomMode(true);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadCfg(); wire(); ping().catch(()=>{});
+  // coba cari sesi open otomatis beberapa detik kemudian
+  setTimeout(findOpen, 400);
+  // pantau perubahan sesi setiap 5 detik (mis. user menutup/membuka dari web)
+  setInterval(async ()=>{
+    const before = state.sessionId;
+    try{
+      const js = await call('/history','GET');
+      const open = (js.patients||[]).find(p=>p.status==='OPEN');
+      const sid = open ? open.id : null;
+      if(sid !== before){
+        state.sessionId = sid;
+        if(sid){
+          setPill(els.sessionPill,'ok',`OPEN: ${sid}`);
+          els.sessionInfo.textContent = `sessionStart: ${open.sessionStart || '-'}`;
+          toggleSendUI(true);
+          log(`Sesi berganti → ${sid}`,'ok');
+        }else{
+          setPill(els.sessionPill,'err','Tidak ada sesi OPEN');
+          els.sessionInfo.textContent = 'Buka sesi dari web user dulu.';
+          toggleSendUI(false);
+          log('Semua sesi CLOSED.','err');
+        }
+      }
+    }catch(e){ /* diamkan */ }
+  }, 5000);
+});
 </script>
 </body>
 </html>
