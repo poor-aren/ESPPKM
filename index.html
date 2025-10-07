@@ -1,576 +1,267 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Simulator - SUNSTONE</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Courier New', monospace;
-            background: #1a1a1a;
-            color: #00ff00;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 2px solid #00ff00;
-        }
-
-        .header h1 {
-            color: #00ff00;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            color: #888;
-            font-size: 12px;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .panel {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #333;
-        }
-
-        .panel-title {
-            color: #00ff00;
-            font-size: 16px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #444;
-        }
-
-        .oled-screen {
-            background: #000;
-            border: 3px solid #555;
-            border-radius: 5px;
-            padding: 15px;
-            height: 200px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #0ff;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .oled-line {
-            margin: 2px 0;
-        }
-
-        .oled-title {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .sensor-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .sensor-control {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #444;
-        }
-
-        .sensor-label {
-            color: #888;
-            font-size: 11px;
-            margin-bottom: 5px;
-        }
-
-        .sensor-value {
-            color: #00ff00;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 5px;
-            background: #444;
-            outline: none;
-            border-radius: 5px;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            appearance: none;
-            width: 15px;
-            height: 15px;
-            background: #00ff00;
-            cursor: pointer;
-            border-radius: 50%;
-        }
-
-        .button {
-            background: #00ff00;
-            color: #000;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 10px;
-            font-family: 'Courier New', monospace;
-            transition: all 0.3s;
-        }
-
-        .button:hover {
-            background: #00cc00;
-            transform: translateY(-2px);
-        }
-
-        .button:active {
-            transform: translateY(0);
-        }
-
-        .button.danger {
-            background: #ff0000;
-            color: #fff;
-        }
-
-        .button.danger:hover {
-            background: #cc0000;
-        }
-
-        .button:disabled {
-            background: #555;
-            color: #888;
-            cursor: not-allowed;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-led {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #333;
-        }
-
-        .status-led.active {
-            background: #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .log-panel {
-            background: #000;
-            padding: 15px;
-            border-radius: 5px;
-            height: 400px;
-            overflow-y: auto;
-            font-size: 12px;
-            border: 1px solid #444;
-        }
-
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 2px 0;
-        }
-
-        .log-time {
-            color: #666;
-        }
-
-        .log-error {
-            color: #ff0000;
-        }
-
-        .log-success {
-            color: #00ff00;
-        }
-
-        .log-info {
-            color: #0ff;
-        }
-
-        .config-section {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-
-        .config-item {
-            margin-bottom: 10px;
-        }
-
-        .config-label {
-            color: #888;
-            font-size: 12px;
-            margin-bottom: 5px;
-        }
-
-        .config-value {
-            color: #00ff00;
-            font-size: 14px;
-            background: #000;
-            padding: 8px;
-            border-radius: 3px;
-            border: 1px solid #444;
-        }
-
-        @media (max-width: 768px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ESP32 Simulator – SUNSTONE</title>
+  <style>
+    :root{--pri:#3b4998;--bg:#f5f6fa;--mut:#778;--ok:#1e9e5a;--err:#c62828}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:Segoe UI,system-ui,Arial,sans-serif;color:#222}
+    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08);overflow:hidden}
+    .head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee}
+    h1{font-size:20px;margin:0;color:var(--pri)} .tag{font:600 12px/1.6 system-ui;color:#fff;background:var(--pri);padding:4px 10px;border-radius:999px}
+    .body{padding:16px 20px}
+    .grid{display:grid;gap:14px} .g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    label{font-size:12px;color:#444;font-weight:600;margin-bottom:6px;display:block}
+    input,select{width:100%;padding:10px 12px;border:2px solid #e3e5ef;border-radius:8px;font-size:14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{appearance:none;border:0;background:var(--pri);color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn.alt{background:#e9ecff;color:#253;margin-left:6px;color:#1b2a6b}
+    .btn.ghost{background:#fff;border:2px solid #dfe3f5;color:#1b2a6b}
+    .btn.ok{background:var(--ok)} .btn.err{background:var(--err)}
+    .mut{color:var(--mut);font-size:12px}
+    .log{font:12px/1.5 ui-monospace,Consolas,monospace;background:#0e0f14;color:#dce3ff;padding:12px;border-radius:10px;height:220px;overflow:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#f3f5ff;border:1px solid #dee5ff;color:#1b2a6b;padding:8px 10px;border-radius:12px}
+    .sep{height:1px;background:#eee;margin:16px -20px}
+    small.code{font-family:ui-monospace,Consolas,monospace;background:#f4f5f9;border:1px solid #e7e9f3;padding:2px 6px;border-radius:6px}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>ESP32 SIMULATOR - SUNSTONE</h1>
-            <p>Virtual IoT Device for Testing | Device ID: ESP01</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <h1>ESP32 Simulator</h1>
+        <span class="tag">Testing tool • tidak mengubah UI utama</span>
+      </div>
+      <div class="body grid g2">
+        <!-- KONFIGURASI -->
+        <div>
+          <h3 style="margin:0 0 8px;color:#1b2a6b">Konfigurasi AWS</h3>
+          <div class="grid">
+            <div>
+              <label>API URL</label>
+              <input id="apiUrl" value="https://8308ialq3d.execute-api.ap-southeast-1.amazonaws.com/tros-20251007091134-4239">
+            </div>
+            <div>
+              <label>API Key</label>
+              <input id="apiKey" value="75179e4b24c0179f1806d2a18707e7cb">
+            </div>
+            <div>
+              <label>Device ID</label>
+              <input id="deviceId" value="ESP01">
+            </div>
+            <div>
+              <label>Session ID (nama_hp)</label>
+              <input id="sessionId" placeholder="Contoh: Smoke_001">
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ghost" id="btnSaveCfg">Simpan Konfig</button>
+            <button class="btn alt" id="btnOpenSession">Buka Sesi Cepat</button>
+          </div>
+          <p class="mut" style="margin-top:6px">
+            * “Buka Sesi Cepat” membuat sesi dengan <small class="code">name=Sim</small>, <small class="code">phone=Now</small> dan memetakan device ID di atas.
+          </p>
         </div>
 
-        <div class="main-grid">
-            <!-- Left Panel: Device Control -->
+        <!-- SENSOR PANEL -->
+        <div>
+          <h3 style="margin:0 0 8px;color:#1b2a6b">Nilai Sensor</h3>
+          <div class="grid g2">
+            <div><label>S1</label><input id="s1" type="number" step="1" value="12"></div>
+            <div><label>S2</label><input id="s2" type="number" step="1" value="34"></div>
+            <div><label>S3</label><input id="s3" type="number" step="1" value="56"></div>
+            <div><label>S4</label><input id="s4" type="number" step="1" value="78"></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ghost" id="btnRandom">Acak</button>
+            <span class="pill"><span id="avgText">rata2: 45.0</span></span>
+          </div>
+          <div class="sep"></div>
+          <div class="grid g2">
             <div>
-                <div class="panel">
-                    <div class="panel-title">OLED DISPLAY (128x64)</div>
-                    
-                    <div class="oled-screen" id="oledScreen">
-                        <div class="oled-title">SUNSTONE</div>
-                        <div class="oled-line" style="text-align:center;">Booting...</div>
-                    </div>
-
-                    <div class="status-bar">
-                        <div class="status-item">
-                            <div class="status-led" id="wifiLed"></div>
-                            <span>WiFi</span>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-led" id="mqttLed"></div>
-                            <span>MQTT</span>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-led" id="sessionLed"></div>
-                            <span>Session</span>
-                        </div>
-                    </div>
-
-                    <button class="button" id="startBtn" onclick="startTest()">
-                        START TEST (Rocker Switch)
-                    </button>
-
-                    <button class="button danger" id="stopBtn" onclick="stopTest()" disabled>
-                        STOP TEST
-                    </button>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">SENSOR CONTROLS</div>
-                    
-                    <div class="sensor-grid">
-                        <div class="sensor-control">
-                            <div class="sensor-label">MG811 - CO2</div>
-                            <div class="sensor-value" id="valueMG811">300</div>
-                            <input type="range" id="sliderMG811" min="200" max="600" value="300" oninput="updateSensor('MG811', this.value)">
-                        </div>
-
-                        <div class="sensor-control">
-                            <div class="sensor-label">MQ7 - CO</div>
-                            <div class="sensor-value" id="valueMQ7">80</div>
-                            <input type="range" id="sliderMQ7" min="50" max="150" value="80" oninput="updateSensor('MQ7', this.value)">
-                        </div>
-
-                        <div class="sensor-control">
-                            <div class="sensor-label">MQ3 - Alcohol</div>
-                            <div class="sensor-value" id="valueMQ3">60</div>
-                            <input type="range" id="sliderMQ3" min="30" max="120" value="60" oninput="updateSensor('MQ3', this.value)">
-                        </div>
-
-                        <div class="sensor-control">
-                            <div class="sensor-label">MQ135 - Air Quality</div>
-                            <div class="sensor-value" id="valueMQ135">220</div>
-                            <input type="range" id="sliderMQ135" min="150" max="350" value="220" oninput="updateSensor('MQ135', this.value)">
-                        </div>
-                    </div>
-
-                    <button class="button" onclick="randomizeSensors()">
-                        RANDOMIZE SENSORS
-                    </button>
-                </div>
+              <label>Kategori</label>
+              <select id="category">
+                <option value="auto" selected>Auto (berdasar rata-rata)</option>
+                <option value="Rendah">Rendah</option>
+                <option value="Sedang">Sedang</option>
+                <option value="Tinggi">Tinggi</option>
+              </select>
             </div>
-
-            <!-- Right Panel: Logs & Config -->
             <div>
-                <div class="panel">
-                    <div class="panel-title">CONFIGURATION</div>
-                    
-                    <div class="config-section">
-                        <div class="config-item">
-                            <div class="config-label">AWS IoT Endpoint</div>
-                            <div class="config-value">a2vg3urkg4mky6-ats.iot.ap-southeast-1.amazonaws.com</div>
-                        </div>
-
-                        <div class="config-item">
-                            <div class="config-label">API Gateway</div>
-                            <div class="config-value" id="apiEndpoint">https://dd23gtb2nc.execute-api.ap-southeast-1.amazonaws.com</div>
-                        </div>
-
-                        <div class="config-item">
-                            <div class="config-label">Thing Name</div>
-                            <div class="config-value">ESP01</div>
-                        </div>
-
-                        <div class="config-item">
-                            <div class="config-label">Publish Interval</div>
-                            <div class="config-value">2000ms (2 seconds)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">SERIAL MONITOR</div>
-                    
-                    <div class="log-panel" id="logPanel">
-                        <div class="log-entry log-info">
-                            <span class="log-time">[00:00:00]</span> SUNSTONE ESP32 Simulator Started
-                        </div>
-                    </div>
-                </div>
+              <label>Confidence (0–1, kosong=auto)</label>
+              <input id="conf" type="number" step="0.01" min="0" max="1" placeholder="mis. 0.82">
             </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ok" id="btnSendOnce">Kirim Sekali → /result</button>
+            <button class="btn" id="btnAuto">Mulai Auto Stream</button>
+            <button class="btn err" id="btnStop" disabled>Stop</button>
+          </div>
+          <p class="mut" style="margin-top:8px">
+            Sim ini **mengirim langsung ke <small class="code">POST /session/{id}/result</small>** (tanpa IoT Core).
+            Dashboard-mu tetap bisa melihat **/latest** & **riwayat**.
+          </p>
         </div>
+
+        <!-- LOG -->
+        <div class="g3" style="grid-column:1/-1">
+          <div style="grid-column:1/-1">
+            <h3 style="margin:4px 0 8px;color:#1b2a6b">Log</h3>
+            <div id="log" class="log"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // Configuration
-        const CONFIG = {
-            apiEndpoint: 'https://dd23gtb2nc.execute-api.ap-southeast-1.amazonaws.com',
-            deviceId: 'ESP01',
-            publishInterval: 2000
-        };
+    <p class="mut" style="margin-top:10px">
+      Catatan: kalau kamu benar-benar mau publish ke **AWS IoT Core** via browser, kita perlu setup Cognito Identity + IoT policy
+      lalu pakai <small class="code">aws-iot-device-sdk-js-v2</small> (MQTT over WebSocket). Itu bisa, tapi di-setup nanti saja.
+    </p>
+  </div>
 
-        // State
-        let testRunning = false;
-        let publishInterval = null;
-        let sensorValues = {
-            mg811: 300,
-            mq7: 80,
-            mq3: 60,
-            mq135: 220
-        };
+<script>
+/* ===== Helpers kecil ===== */
+const $ = s => document.querySelector(s);
+const logBox = $('#log');
+const log = (...msg) => {
+  const line = `[${new Date().toLocaleTimeString()}] ` + msg.join(' ');
+  const div = document.createElement('div'); div.textContent = line;
+  logBox.appendChild(div); logBox.scrollTop = logBox.scrollHeight;
+};
+const saveLS = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const getLS  = (k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } };
 
-        // Initialize
-        window.onload = function() {
-            log('System initialized', 'info');
-            log('Connecting to WiFi...', 'info');
-            
-            setTimeout(() => {
-                document.getElementById('wifiLed').classList.add('active');
-                log('WiFi connected', 'success');
-                updateOLED('READY', 'Press START');
-            }, 1000);
+/* ===== State & Config ===== */
+const cfg = getLS('espSimCfg', {
+  apiUrl: $('#apiUrl').value.trim(),
+  apiKey: $('#apiKey').value.trim(),
+  deviceId: $('#deviceId').value.trim(),
+  sessionId: $('#sessionId').value.trim()
+});
+function applyCfgToForm(){
+  $('#apiUrl').value = cfg.apiUrl;
+  $('#apiKey').value = cfg.apiKey;
+  $('#deviceId').value = cfg.deviceId;
+  $('#sessionId').value = cfg.sessionId;
+}
+applyCfgToForm();
 
-            // Simulate MQTT connection
-            setTimeout(() => {
-                document.getElementById('mqttLed').classList.add('active');
-                log('MQTT connected to AWS IoT', 'success');
-            }, 2000);
-        };
+/* ===== Hit API helper ===== */
+async function callAPI(path, method='GET', body=null){
+  const url = cfg.apiUrl.replace(/\/+$/,'') + path;
+  const opt = { method, headers: { 'content-type':'application/json', 'x-api-key': cfg.apiKey } };
+  if(body) opt.body = JSON.stringify(body);
+  const res = await fetch(url, opt);
+  if(!res.ok){
+    const t = await res.text().catch(()=>''+res.status);
+    throw new Error(`${method} ${path} → ${res.status} ${t}`);
+  }
+  return res.json();
+}
 
-        // Update sensor display
-        function updateSensor(sensor, value) {
-            const key = sensor.toLowerCase();
-            sensorValues[key] = parseInt(value);
-            document.getElementById('value' + sensor).textContent = value;
-        }
+/* ===== Category/Confidence “auto” (sama seperti UI-mu) ===== */
+function autoCategory(values){
+  const n = (values||[]).length || 1;
+  const avg = (values||[]).reduce((a,b)=>a+Number(b||0),0)/n;
+  let cat = 'Rendah';
+  if(avg>=80) cat='Tinggi';
+  else if(avg>=40) cat='Sedang';
+  const conf = Math.min(0.95, 0.6 + (avg/200));
+  return { cat, conf: Number(conf.toFixed(2)), avg };
+}
+function readValues(){
+  const vals = [$('#s1').value,$('#s2').value,$('#s3').value,$('#s4').value].map(v=>Number(v||0));
+  const {cat, conf, avg} = autoCategory(vals);
+  $('#avgText').textContent = `rata2: ${avg.toFixed(1)}`;
+  return { vals, cat, conf };
+}
+['#s1','#s2','#s3','#s4'].forEach(sel=>{
+  $(sel).addEventListener('input', readValues);
+});
+readValues();
 
-        // Randomize sensors
-        function randomizeSensors() {
-            const ranges = {
-                mg811: [200, 600],
-                mq7: [50, 150],
-                mq3: [30, 120],
-                mq135: [150, 350]
-            };
+/* ===== Actions ===== */
+$('#btnSaveCfg').addEventListener('click', ()=>{
+  cfg.apiUrl   = $('#apiUrl').value.trim();
+  cfg.apiKey   = $('#apiKey').value.trim();
+  cfg.deviceId = $('#deviceId').value.trim();
+  cfg.sessionId= $('#sessionId').value.trim();
+  saveLS('espSimCfg', cfg);
+  log('✅ Konfig disimpan.');
+});
 
-            for (const [sensor, range] of Object.entries(ranges)) {
-                const value = Math.floor(Math.random() * (range[1] - range[0]) + range[0]);
-                sensorValues[sensor] = value;
-                
-                const sensorUpper = sensor.toUpperCase().replace('MQ', 'MQ');
-                document.getElementById('slider' + sensorUpper.replace('MG', 'MG')).value = value;
-                document.getElementById('value' + sensorUpper.replace('MG', 'MG')).textContent = value;
-            }
-            
-            log('Sensors randomized', 'info');
-        }
+$('#btnRandom').addEventListener('click', ()=>{
+  const rand = ()=> Math.floor(Math.random()*120);
+  $('#s1').value = rand(); $('#s2').value = rand(); $('#s3').value = rand(); $('#s4').value = rand();
+  readValues();
+});
 
-        // Start test
-        function startTest() {
-            if (testRunning) return;
-            
-            testRunning = true;
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-            document.getElementById('sessionLed').classList.add('active');
-            
-            log('>>> TEST STARTED <<<', 'success');
-            updateOLED('TESTING', 'Sending data...');
-            
-            // Start publishing
-            publishData();
-            publishInterval = setInterval(publishData, CONFIG.publishInterval);
-        }
+/* Buka sesi cepat: name=Sim, phone=Now, map ke deviceId */
+$('#btnOpenSession').addEventListener('click', async ()=>{
+  try{
+    cfg.apiUrl   = $('#apiUrl').value.trim();
+    cfg.apiKey   = $('#apiKey').value.trim();
+    cfg.deviceId = $('#deviceId').value.trim();
+    const r = await callAPI('/session','POST',{ name:'Sim', phone:'Now', device_id: cfg.deviceId });
+    cfg.sessionId = r.id; $('#sessionId').value = cfg.sessionId; saveLS('espSimCfg',cfg);
+    log('✅ Sesi dibuat:', r.id);
+  }catch(e){ log('❌ Gagal buat sesi:', e.message); alert(e.message); }
+});
 
-        // Stop test
-        function stopTest() {
-            if (!testRunning) return;
-            
-            testRunning = false;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('sessionLed').classList.remove('active');
-            
-            clearInterval(publishInterval);
-            
-            log('>>> TEST STOPPED <<<', 'info');
-            updateOLED('READY', 'Press START');
-        }
+/* Kirim sekali ke /result */
+async function publishOnce(){
+  if(!cfg.sessionId){ alert('Isi Session ID dulu (atau klik Buka Sesi Cepat).'); return; }
+  const {vals, cat, conf} = readValues();
+  let category = $('#category').value;
+  if(category==='auto') category = cat;
+  let confidence = $('#conf').value.trim();
+  confidence = confidence ? Number(confidence) : conf;
 
-        // Publish sensor data
-        async function publishData() {
-            const payload = {
-                device_id: CONFIG.deviceId,
-                timestamp: new Date().toISOString(),
-                sensors: {
-                    raw_mg811: sensorValues.mg811,
-                    raw_mq7: sensorValues.mq7,
-                    raw_mq3: sensorValues.mq3,
-                    raw_mq135: sensorValues.mq135
-                }
-            };
+  const payload = {
+    category, confidence,
+    sensor_values: vals,
+    device_id: cfg.deviceId
+  };
 
-            log('Publishing: ' + JSON.stringify(payload.sensors), 'info');
+  try{
+    const r = await callAPI(`/session/${encodeURIComponent(cfg.sessionId)}/result`, 'POST', payload);
+    log('➡️  POST /result', JSON.stringify(payload), '→', JSON.stringify(r));
+    // cek latest biar kelihatan
+    const latest = await callAPI(`/session/${encodeURIComponent(cfg.sessionId)}/latest`, 'GET');
+    log('⬅️  GET /latest →', JSON.stringify(latest));
+  }catch(e){
+    log('❌ Gagal kirim:', e.message);
+    alert(e.message);
+  }
+}
+$('#btnSendOnce').addEventListener('click', publishOnce);
 
-            // Simulate sending via Lambda (bypass IoT Core for simulator)
-            try {
-                const response = await fetch(`${CONFIG.apiEndpoint}/simulator/ingest`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+/* Auto stream */
+let timer = null;
+$('#btnAuto').addEventListener('click', ()=>{
+  if(timer) return;
+  timer = setInterval(()=>{
+    // kalau confidence kosong → auto; kalau diisi → pakai nilai user
+    publishOnce();
+    // opsi: acak tiap tick biar jalan terus
+    $('#btnRandom').click();
+  }, 1200);
+  $('#btnStop').disabled = false;
+  log('▶️ Auto stream dimulai (1.2s).');
+});
+$('#btnStop').addEventListener('click', ()=>{
+  if(timer){ clearInterval(timer); timer=null; log('⏹️ Auto stream dihentikan.'); }
+  $('#btnStop').disabled = true;
+});
 
-                if (response.ok) {
-                    log('Data sent successfully', 'success');
-                    updateOLEDTest();
-                } else {
-                    log('Failed to send data: ' + response.status, 'error');
-                }
-            } catch (error) {
-                log('Network error: ' + error.message, 'error');
-            }
-        }
-
-        // Update OLED display
-        function updateOLED(title, message) {
-            const screen = document.getElementById('oledScreen');
-            screen.innerHTML = `
-                <div class="oled-title">${title}</div>
-                <div class="oled-line" style="text-align:center; margin-top:10px;">${message}</div>
-            `;
-        }
-
-        function updateOLEDTest() {
-            const screen = document.getElementById('oledScreen');
-            screen.innerHTML = `
-                <div class="oled-title">TESTING</div>
-                <div style="font-size:12px;">
-                    <div class="oled-line">CO2: ${sensorValues.mg811}</div>
-                    <div class="oled-line">CO:  ${sensorValues.mq7}</div>
-                    <div class="oled-line">ALC: ${sensorValues.mq3}</div>
-                    <div class="oled-line">AIR: ${sensorValues.mq135}</div>
-                </div>
-            `;
-        }
-
-        // Logging
-        function log(message, type = 'info') {
-            const time = new Date().toLocaleTimeString();
-            const panel = document.getElementById('logPanel');
-            
-            const entry = document.createElement('div');
-            entry.className = 'log-entry log-' + type;
-            entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
-            
-            panel.appendChild(entry);
-            panel.scrollTop = panel.scrollHeight;
-        }
-
-        // Simulate receiving result from backend
-        function simulateResult(category, confidence) {
-            const screen = document.getElementById('oledScreen');
-            screen.innerHTML = `
-                <div class="oled-title">RESULT</div>
-                <div style="text-align:center; font-size:18px; margin:15px 0;">
-                    ${category}
-                </div>
-                <div style="text-align:center; font-size:12px;">
-                    Conf: ${confidence}%
-                </div>
-            `;
-            
-            log(`Result received: ${category} (${confidence}%)`, 'success');
-            stopTest();
-        }
-
-        // Expose for external testing
-        window.simulateResult = simulateResult;
-    </script>
+/* Restore config dari localStorage saat awal */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // kalau sebelumnya sudah simpan sessionId, langsung pakai
+  if(cfg.sessionId) log('ℹ️ Session aktif:', cfg.sessionId);
+});
+</script>
 </body>
 </html>
