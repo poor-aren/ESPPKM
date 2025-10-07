@@ -1,266 +1,344 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>ESP32 Simulator – SUNSTONE</title>
+  <meta charset="utf-8" />
+  <title>ESP32 Simulator — Strict Session (Find-Only)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root{--pri:#3b4998;--bg:#f5f6fa;--mut:#778;--ok:#1e9e5a;--err:#c62828}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:Segoe UI,system-ui,Arial,sans-serif;color:#222}
-    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
-    .card{background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08);overflow:hidden}
-    .head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee}
-    h1{font-size:20px;margin:0;color:var(--pri)} .tag{font:600 12px/1.6 system-ui;color:#fff;background:var(--pri);padding:4px 10px;border-radius:999px}
-    .body{padding:16px 20px}
-    .grid{display:grid;gap:14px} .g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    label{font-size:12px;color:#444;font-weight:600;margin-bottom:6px;display:block}
-    input,select{width:100%;padding:10px 12px;border:2px solid #e3e5ef;border-radius:8px;font-size:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{appearance:none;border:0;background:var(--pri);color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .btn.alt{background:#e9ecff;color:#253;margin-left:6px;color:#1b2a6b}
-    .btn.ghost{background:#fff;border:2px solid #dfe3f5;color:#1b2a6b}
-    .btn.ok{background:var(--ok)} .btn.err{background:var(--err)}
-    .mut{color:var(--mut);font-size:12px}
-    .log{font:12px/1.5 ui-monospace,Consolas,monospace;background:#0e0f14;color:#dce3ff;padding:12px;border-radius:10px;height:220px;overflow:auto}
-    .pill{display:inline-flex;align-items:center;gap:8px;background:#f3f5ff;border:1px solid #dee5ff;color:#1b2a6b;padding:8px 10px;border-radius:12px}
-    .sep{height:1px;background:#eee;margin:16px -20px}
-    small.code{font-family:ui-monospace,Consolas,monospace;background:#f4f5f9;border:1px solid #e7e9f3;padding:2px 6px;border-radius:6px}
+    :root{--pri:#3b4998;--bg:#f5f6fa;--text:#222;--muted:#6b7280;--ok:#16a34a;--warn:#ca8a04;--err:#dc2626}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1000px;margin:32px auto;padding:16px}
+    .title{font-size:22px;font-weight:700;color:var(--pri);margin-bottom:12px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 6px 28px rgba(0,0,0,.08);padding:16px;margin-bottom:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    label{font-size:12px;font-weight:700;color:#374151;display:block;margin:2px 0 6px}
+    input,select{width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none}
+    input:focus,select:focus{border-color:var(--pri)}
+    .btn{appearance:none;border:none;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn-pri{background:var(--pri);color:#fff}
+    .btn-sec{background:#eef2ff;color:#1f2a52}
+    .btn-danger{background:#fee2e2;color:#7f1d1d}
+    .btn-ghost{background:#f3f4f6;color:#111827}
+    .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .tag-ok{background:#dcfce7;color:#166534}
+    .tag-warn{background:#fef9c3;color:#854d0e}
+    .tag-err{background:#fee2e2;color:#7f1d1d}
+    .muted{color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .log{background:#0b1220;color:#d1d5db;border-radius:10px;padding:10px;height:220px;overflow:auto;font-size:12px}
+    .num input{text-align:right}
+    .small{font-size:12px}
+    .grid{display:grid;gap:10px}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <div class="title">ESP32 Simulator — Strict Session (Find-Only)</div>
+
+    <!-- KONFIG -->
     <div class="card">
-      <div class="head">
-        <h1>ESP32 Simulator</h1>
-        <span class="tag">Testing tool • tidak mengubah UI utama</span>
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div style="flex:1;min-width:260px;margin-right:10px">
+          <label>API URL</label>
+          <input id="apiUrl" placeholder="https://<apiId>.execute-api.<region>.amazonaws.com/<stage>">
+        </div>
+        <div style="flex:1;min-width:220px;margin-right:10px">
+          <label>API Key</label>
+          <input id="apiKey" placeholder="API key" class="mono">
+        </div>
+        <div style="width:160px">
+          <label>Device ID</label>
+          <input id="deviceId" placeholder="ESP01" value="ESP01">
+        </div>
       </div>
-      <div class="body grid g2">
-        <!-- KONFIGURASI -->
-        <div>
-          <h3 style="margin:0 0 8px;color:#1b2a6b">Konfigurasi AWS</h3>
-          <div class="grid">
-            <div>
-              <label>API URL</label>
-              <input id="apiUrl" value="https://8308ialq3d.execute-api.ap-southeast-1.amazonaws.com/tros-20251007091134-4239">
-            </div>
-            <div>
-              <label>API Key</label>
-              <input id="apiKey" value="75179e4b24c0179f1806d2a18707e7cb">
-            </div>
-            <div>
-              <label>Device ID</label>
-              <input id="deviceId" value="ESP01">
-            </div>
-            <div>
-              <label>Session ID (nama_hp)</label>
-              <input id="sessionId" placeholder="Contoh: Smoke_001">
-            </div>
-          </div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn ghost" id="btnSaveCfg">Simpan Konfig</button>
-            <button class="btn alt" id="btnOpenSession">Buka Sesi Cepat</button>
-          </div>
-          <p class="mut" style="margin-top:6px">
-            * “Buka Sesi Cepat” membuat sesi dengan <small class="code">name=Sim</small>, <small class="code">phone=Now</small> dan memetakan device ID di atas.
-          </p>
-        </div>
 
-        <!-- SENSOR PANEL -->
-        <div>
-          <h3 style="margin:0 0 8px;color:#1b2a6b">Nilai Sensor</h3>
-          <div class="grid g2">
-            <div><label>S1</label><input id="s1" type="number" step="1" value="12"></div>
-            <div><label>S2</label><input id="s2" type="number" step="1" value="34"></div>
-            <div><label>S3</label><input id="s3" type="number" step="1" value="56"></div>
-            <div><label>S4</label><input id="s4" type="number" step="1" value="78"></div>
-          </div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn ghost" id="btnRandom">Acak</button>
-            <span class="pill"><span id="avgText">rata2: 45.0</span></span>
-          </div>
-          <div class="sep"></div>
-          <div class="grid g2">
-            <div>
-              <label>Kategori</label>
-              <select id="category">
-                <option value="auto" selected>Auto (berdasar rata-rata)</option>
-                <option value="Rendah">Rendah</option>
-                <option value="Sedang">Sedang</option>
-                <option value="Tinggi">Tinggi</option>
-              </select>
-            </div>
-            <div>
-              <label>Confidence (0–1, kosong=auto)</label>
-              <input id="conf" type="number" step="0.01" min="0" max="1" placeholder="mis. 0.82">
-            </div>
-          </div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn ok" id="btnSendOnce">Kirim Sekali → /result</button>
-            <button class="btn" id="btnAuto">Mulai Auto Stream</button>
-            <button class="btn err" id="btnStop" disabled>Stop</button>
-          </div>
-          <p class="mut" style="margin-top:8px">
-            Sim ini **mengirim langsung ke <small class="code">POST /session/{id}/result</small>** (tanpa IoT Core).
-            Dashboard-mu tetap bisa melihat **/latest** & **riwayat**.
-          </p>
+      <div class="row" style="margin-top:10px;align-items:flex-end">
+        <div style="flex:1;min-width:260px;margin-right:10px">
+          <label>Session ID (otomatis, hanya jika OPEN ada)</label>
+          <input id="sessionId" class="mono" placeholder="Nama_HP" readonly>
         </div>
-
-        <!-- LOG -->
-        <div class="g3" style="grid-column:1/-1">
-          <div style="grid-column:1/-1">
-            <h3 style="margin:4px 0 8px;color:#1b2a6b">Log</h3>
-            <div id="log" class="log"></div>
-          </div>
+        <div class="row">
+          <button class="btn btn-ghost" id="btnDetect">🔎 Cari Sesi Terbuka</button>
+          <label class="row" style="gap:6px;margin-left:8px">
+            <input type="checkbox" id="autoDetect" />
+            <span class="small muted">Auto-cari tiap 2s</span>
+          </label>
         </div>
+        <div id="statusBadge" class="tag tag-err" style="margin-left:auto">NO SESSION</div>
+      </div>
+      <div class="small muted" style="margin-top:6px">
+        * Simulator <b>tidak akan membuat sesi</b>. Jika belum ada sesi OPEN untuk Device ID ini, tombol kirim akan nonaktif.
+        Buka sesi dari dashboard operator terlebih dahulu.
       </div>
     </div>
 
-    <p class="mut" style="margin-top:10px">
-      Catatan: kalau kamu benar-benar mau publish ke **AWS IoT Core** via browser, kita perlu setup Cognito Identity + IoT policy
-      lalu pakai <small class="code">aws-iot-device-sdk-js-v2</small> (MQTT over WebSocket). Itu bisa, tapi di-setup nanti saja.
-    </p>
+    <!-- KONTROL SENSOR & KIRIM -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div style="font-weight:800;color:#111827">Kontrol Sensor</div>
+        <div class="row">
+          <button class="btn btn-ghost" id="btnRandom">🎲 Random</button>
+          <button class="btn btn-ghost" id="btnZero">↺ Reset</button>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-top:12px">
+        <div class="num"><label>S1</label><input id="s1" type="number" min="0" max="300" value="0"></div>
+        <div class="num"><label>S2</label><input id="s2" type="number" min="0" max="300" value="0"></div>
+        <div class="num"><label>S3</label><input id="s3" type="number" min="0" max="300" value="0"></div>
+        <div class="num"><label>S4</label><input id="s4" type="number" min="0" max="300" value="0"></div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px">
+        <div>
+          <label>Mode Kategori</label>
+          <select id="mode">
+            <option value="auto" selected>Otomatis (rata-rata)</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
+        <div>
+          <label>Kategori (kalau Manual)</label>
+          <select id="category" disabled>
+            <option>Rendah</option>
+            <option>Sedang</option>
+            <option>Tinggi</option>
+          </select>
+        </div>
+        <div>
+          <label>Interval Auto-Kirim (ms)</label>
+          <input id="period" type="number" min="200" step="100" value="1200">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn-pri" id="btnSendOnce" disabled>Kirim Sekali</button>
+        <button class="btn btn-sec" id="btnStart" disabled>Start Auto</button>
+        <button class="btn btn-danger" id="btnStop" disabled>Stop</button>
+      </div>
+
+      <div class="small muted" style="margin-top:10px">
+        Catatan: Simulator ini mengirim langsung ke <b>POST /session/{id}/result</b> agar dashboard bisa melihat hasil.
+        Jalur IoT (sensor → ingest) tetap dilakukan perangkat asli.
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="card">
+      <div style="font-weight:800;color:#111827;margin-bottom:8px">Log</div>
+      <div id="log" class="log mono"></div>
+      <div class="row" style="margin-top:8px;justify-content:space-between">
+        <div class="small muted">Terakhir: <span id="lastTs">-</span></div>
+        <button class="btn btn-ghost" id="btnClearLog">Clear Log</button>
+      </div>
+    </div>
   </div>
 
 <script>
-/* ===== Helpers kecil ===== */
-const $ = s => document.querySelector(s);
-const logBox = $('#log');
-const log = (...msg) => {
-  const line = `[${new Date().toLocaleTimeString()}] ` + msg.join(' ');
-  const div = document.createElement('div'); div.textContent = line;
-  logBox.appendChild(div); logBox.scrollTop = logBox.scrollHeight;
+/* ===================== DEFAULT (boleh ganti) ===================== */
+const DEFAULTS = {
+  apiUrl  : "https://8308ialq3d.execute-api.ap-southeast-1.amazonaws.com/tros-20251007091134-4239",
+  apiKey  : "75179e4b24c0179f1806d2a18707e7cb",
+  deviceId: "ESP01",
+  sessionId: ""
 };
-const saveLS = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
-const getLS  = (k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } };
+/* ================================================================ */
 
-/* ===== State & Config ===== */
-const cfg = getLS('espSimCfg', {
-  apiUrl: $('#apiUrl').value.trim(),
-  apiKey: $('#apiKey').value.trim(),
-  deviceId: $('#deviceId').value.trim(),
-  sessionId: $('#sessionId').value.trim()
-});
-function applyCfgToForm(){
+const $ = sel => document.querySelector(sel);
+const logBox = $('#log');
+function log(...args){
+  const t = new Date().toLocaleTimeString();
+  const line = `[${t}] ` + args.map(x => typeof x==='string'?x:JSON.stringify(x)).join(' ');
+  logBox.textContent += line + "\n";
+  logBox.scrollTop = logBox.scrollHeight;
+  $('#lastTs').textContent = t;
+}
+function saveLS(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function loadLS(k,fb){ try{ return JSON.parse(localStorage.getItem(k)) || fb }catch{ return fb } }
+
+let cfg = loadLS('espSimCfgStrict', {...DEFAULTS});
+let autoTimer = null, sendTimer = null;
+
+function syncFormFromCfg(){
   $('#apiUrl').value = cfg.apiUrl;
   $('#apiKey').value = cfg.apiKey;
   $('#deviceId').value = cfg.deviceId;
-  $('#sessionId').value = cfg.sessionId;
+  $('#sessionId').value = cfg.sessionId || '';
+  updateUiEnabled();
 }
-applyCfgToForm();
+function syncCfgFromForm(){
+  cfg.apiUrl = $('#apiUrl').value.trim();
+  cfg.apiKey = $('#apiKey').value.trim();
+  cfg.deviceId = $('#deviceId').value.trim();
+  // sessionId readonly
+  saveLS('espSimCfgStrict', cfg);
+  updateUiEnabled();
+}
 
-/* ===== Hit API helper ===== */
+function setStatus(text, kind){
+  const b = $('#statusBadge');
+  b.textContent = text;
+  b.className = 'tag ' + (kind==='ok'?'tag-ok':kind==='warn'?'tag-warn':'tag-err');
+}
+function updateUiEnabled(){
+  const ready = Boolean(cfg.apiUrl && cfg.apiKey && cfg.deviceId && cfg.sessionId);
+  $('#btnSendOnce').disabled = !ready;
+  $('#btnStart').disabled    = !ready || Boolean(sendTimer);
+  $('#btnStop').disabled     = !sendTimer;
+  if (ready) setStatus('READY', 'ok');
+  else if (cfg.apiUrl && cfg.apiKey && cfg.deviceId) setStatus('NO SESSION', 'err');
+  else setStatus('DISCONNECTED','err');
+}
+
 async function callAPI(path, method='GET', body=null){
   const url = cfg.apiUrl.replace(/\/+$/,'') + path;
-  const opt = { method, headers: { 'content-type':'application/json', 'x-api-key': cfg.apiKey } };
-  if(body) opt.body = JSON.stringify(body);
+  const opt = { method, headers: {'content-type':'application/json','x-api-key':cfg.apiKey} };
+  if (body) opt.body = JSON.stringify(body);
   const res = await fetch(url, opt);
-  if(!res.ok){
-    const t = await res.text().catch(()=>''+res.status);
-    throw new Error(`${method} ${path} → ${res.status} ${t}`);
+  if (!res.ok){
+    const txt = await res.text().catch(()=>res.statusText);
+    throw new Error(`${method} ${path} -> ${res.status} ${txt}`);
   }
   return res.json();
 }
 
-/* ===== Category/Confidence “auto” (sama seperti UI-mu) ===== */
-function autoCategory(values){
-  const n = (values||[]).length || 1;
-  const avg = (values||[]).reduce((a,b)=>a+Number(b||0),0)/n;
-  let cat = 'Rendah';
-  if(avg>=80) cat='Tinggi';
-  else if(avg>=40) cat='Sedang';
-  const conf = Math.min(0.95, 0.6 + (avg/200));
-  return { cat, conf: Number(conf.toFixed(2)), avg };
+/* --------- STRICT: hanya cari sesi OPEN, tidak pernah membuat ---------- */
+async function findOpenSessionIdForDevice(deviceId){
+  const { patients = [] } = await callAPI('/history','GET');
+  const open = patients.filter(p => p.status === 'OPEN' && p.device_id === deviceId);
+  if (!open.length) return null;
+  open.sort((a,b) => ((b.lastResultTimestamp||b.sessionStart||'').localeCompare(a.lastResultTimestamp||a.sessionStart||'')));
+  return open[0].id;
 }
-function readValues(){
-  const vals = [$('#s1').value,$('#s2').value,$('#s3').value,$('#s4').value].map(v=>Number(v||0));
-  const {cat, conf, avg} = autoCategory(vals);
-  $('#avgText').textContent = `rata2: ${avg.toFixed(1)}`;
-  return { vals, cat, conf };
-}
-['#s1','#s2','#s3','#s4'].forEach(sel=>{
-  $(sel).addEventListener('input', readValues);
-});
-readValues();
 
-/* ===== Actions ===== */
-$('#btnSaveCfg').addEventListener('click', ()=>{
-  cfg.apiUrl   = $('#apiUrl').value.trim();
-  cfg.apiKey   = $('#apiKey').value.trim();
-  cfg.deviceId = $('#deviceId').value.trim();
-  cfg.sessionId= $('#sessionId').value.trim();
-  saveLS('espSimCfg', cfg);
-  log('✅ Konfig disimpan.');
+async function detectSession(){
+  try{
+    syncCfgFromForm();
+    if (!cfg.apiUrl || !cfg.apiKey || !cfg.deviceId){
+      log('⚠️ Lengkapi API URL, API Key, dan Device ID dulu.');
+      return;
+    }
+    setStatus('SEARCHING…','warn');
+    const sid = await findOpenSessionIdForDevice(cfg.deviceId);
+    if (sid){
+      cfg.sessionId = sid;
+      $('#sessionId').value = sid;
+      saveLS('espSimCfgStrict', cfg);
+      updateUiEnabled();
+      log('✅ OPEN session ditemukan:', sid);
+    } else {
+      cfg.sessionId = '';
+      $('#sessionId').value = '';
+      saveLS('espSimCfgStrict', cfg);
+      updateUiEnabled();
+      log('⛔ Tidak ada sesi OPEN untuk device', cfg.deviceId, '— buka sesi dari dashboard.');
+    }
+  }catch(e){
+    log('❌ detect error:', String(e));
+    setStatus('ERROR','err');
+  }
+}
+
+/* --------------------- Kirim “result” (simulasi) ---------------------- */
+function readSensors(){
+  return [$('#s1').value,$('#s2').value,$('#s3').value,$('#s4').value].map(x=>Number(x||0));
+}
+function inferCategory(values){
+  const avg = values.reduce((a,b)=>a+b,0)/Math.max(values.length,1);
+  let category='Rendah';
+  if (avg>=80) category='Tinggi';
+  else if (avg>=40) category='Sedang';
+  const confidence = Math.min(0.95, 0.6 + (avg/200));
+  return { category, confidence: Number(confidence.toFixed(2)) };
+}
+
+async function sendOnce(){
+  try{
+    if (!cfg.sessionId){
+      log('⛔ Tidak ada sesi OPEN — kirim dibatalkan.');
+      return;
+    }
+    const values = readSensors();
+    let cat, conf;
+    if ($('#mode').value === 'manual'){
+      cat = $('#category').value; conf = 0.8;
+    } else {
+      const x = inferCategory(values); cat = x.category; conf = x.confidence;
+    }
+    const payload = { category:cat, confidence:conf, sensor_values:values, device_id:cfg.deviceId };
+    const r = await callAPI(`/session/${encodeURIComponent(cfg.sessionId)}/result`, 'POST', payload);
+    log('📤 POST /result OK →', payload);
+    return r;
+  }catch(err){
+    log('❌ Send failed:', String(err));
+  }
+}
+
+/* ----------------------------- Auto-send ------------------------------ */
+function startAuto(){
+  if (sendTimer || !cfg.sessionId) return;
+  const ms = Math.max(200, Number($('#period').value||1200));
+  $('#btnStart').disabled = true; $('#btnStop').disabled = false;
+  sendTimer = setInterval(sendOnce, ms);
+  log('▶ Auto-send started every', ms, 'ms');
+}
+function stopAuto(){
+  if (!sendTimer) return;
+  clearInterval(sendTimer); sendTimer = null;
+  $('#btnStart').disabled = !cfg.sessionId; $('#btnStop').disabled = true;
+  log('⏸ Auto-send stopped');
+}
+
+/* ------------------------------- UI HOOKS ----------------------------- */
+['#apiUrl','#apiKey','#deviceId'].forEach(sel=>{
+  $(sel).addEventListener('change', ()=>{ syncCfgFromForm(); });
+});
+$('#btnDetect').addEventListener('click', detectSession);
+
+$('#autoDetect').addEventListener('change', (e)=>{
+  if (e.target.checked){
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(detectSession, 2000);
+    detectSession();
+    log('🔁 Auto-detect aktif (2s).');
+  } else {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+    log('⏹ Auto-detect dimatikan.');
+  }
+});
+
+$('#mode').addEventListener('change', ()=>{
+  const manual = $('#mode').value === 'manual';
+  $('#category').disabled = !manual;
 });
 
 $('#btnRandom').addEventListener('click', ()=>{
-  const rand = ()=> Math.floor(Math.random()*120);
-  $('#s1').value = rand(); $('#s2').value = rand(); $('#s3').value = rand(); $('#s4').value = rand();
-  readValues();
+  const r = () => Math.floor(Math.random()*101);
+  $('#s1').value=r();$('#s2').value=r();$('#s3').value=r();$('#s4').value=r();
+});
+$('#btnZero').addEventListener('click', ()=>{
+  $('#s1').value=0;$('#s2').value=0;$('#s3').value=0;$('#s4').value=0;
 });
 
-/* Buka sesi cepat: name=Sim, phone=Now, map ke deviceId */
-$('#btnOpenSession').addEventListener('click', async ()=>{
-  try{
-    cfg.apiUrl   = $('#apiUrl').value.trim();
-    cfg.apiKey   = $('#apiKey').value.trim();
-    cfg.deviceId = $('#deviceId').value.trim();
-    const r = await callAPI('/session','POST',{ name:'Sim', phone:'Now', device_id: cfg.deviceId });
-    cfg.sessionId = r.id; $('#sessionId').value = cfg.sessionId; saveLS('espSimCfg',cfg);
-    log('✅ Sesi dibuat:', r.id);
-  }catch(e){ log('❌ Gagal buat sesi:', e.message); alert(e.message); }
-});
+$('#btnSendOnce').addEventListener('click', sendOnce);
+$('#btnStart').addEventListener('click', startAuto);
+$('#btnStop').addEventListener('click', stopAuto);
+$('#btnClearLog').addEventListener('click', ()=>{ logBox.textContent=''; });
 
-/* Kirim sekali ke /result */
-async function publishOnce(){
-  if(!cfg.sessionId){ alert('Isi Session ID dulu (atau klik Buka Sesi Cepat).'); return; }
-  const {vals, cat, conf} = readValues();
-  let category = $('#category').value;
-  if(category==='auto') category = cat;
-  let confidence = $('#conf').value.trim();
-  confidence = confidence ? Number(confidence) : conf;
-
-  const payload = {
-    category, confidence,
-    sensor_values: vals,
-    device_id: cfg.deviceId
-  };
-
-  try{
-    const r = await callAPI(`/session/${encodeURIComponent(cfg.sessionId)}/result`, 'POST', payload);
-    log('➡️  POST /result', JSON.stringify(payload), '→', JSON.stringify(r));
-    // cek latest biar kelihatan
-    const latest = await callAPI(`/session/${encodeURIComponent(cfg.sessionId)}/latest`, 'GET');
-    log('⬅️  GET /latest →', JSON.stringify(latest));
-  }catch(e){
-    log('❌ Gagal kirim:', e.message);
-    alert(e.message);
-  }
-}
-$('#btnSendOnce').addEventListener('click', publishOnce);
-
-/* Auto stream */
-let timer = null;
-$('#btnAuto').addEventListener('click', ()=>{
-  if(timer) return;
-  timer = setInterval(()=>{
-    // kalau confidence kosong → auto; kalau diisi → pakai nilai user
-    publishOnce();
-    // opsi: acak tiap tick biar jalan terus
-    $('#btnRandom').click();
-  }, 1200);
-  $('#btnStop').disabled = false;
-  log('▶️ Auto stream dimulai (1.2s).');
-});
-$('#btnStop').addEventListener('click', ()=>{
-  if(timer){ clearInterval(timer); timer=null; log('⏹️ Auto stream dihentikan.'); }
-  $('#btnStop').disabled = true;
-});
-
-/* Restore config dari localStorage saat awal */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // kalau sebelumnya sudah simpan sessionId, langsung pakai
-  if(cfg.sessionId) log('ℹ️ Session aktif:', cfg.sessionId);
+  // Prefill dengan nilai yang sudah kamu pakai sebelumnya
+  syncFormFromCfg();
+
+  // Default ke nilai yang sudah terbukti di tes kamu
+  if (!cfg.apiUrl)  cfg.apiUrl  = DEFAULTS.apiUrl;
+  if (!cfg.apiKey)  cfg.apiKey  = DEFAULTS.apiKey;
+  if (!cfg.deviceId)cfg.deviceId= DEFAULTS.deviceId;
+  syncFormFromCfg(); saveLS('espSimCfgStrict', cfg);
+
+  // Auto-detect sekali saat load (tanpa bikin sesi)
+  detectSession();
 });
 </script>
 </body>
