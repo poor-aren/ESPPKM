@@ -472,6 +472,38 @@ Requesting status...`);
       mqttClient.subscribe(CONFIG.mqtt.topics.cmd, (err) => {
         if (!err) {
           addLog('📡 Subscribed to CMD topic');
+          
+          // REQUEST status SETELAH subscribe berhasil
+          setTimeout(() => {
+            addLog('📤 Requesting session status...');
+            mqttClient.publish(
+              'sunstone/esp32/ESP01/status_request',
+              JSON.stringify({ device_id: CONFIG.deviceId, action: 'request_status' }),
+              { qos: 0 },
+              (err) => {
+                if (err) {
+                  addLog('❌ Failed to send status request: ' + err.message);
+                } else {
+                  addLog('✅ Status request sent successfully');
+                }
+              }
+            );
+            
+            // Timeout: kalau 5 detik tidak ada response
+            setTimeout(() => {
+              if (!sessionActive) {
+                addLog('⚠️ No response from website (5s timeout)');
+                updateOLED(`░░░░░░░░░░░░░░░░░░░░
+░ SUNSTONE ESP32 ░
+░░░░░░░░░░░░░░░░░░░░
+
+⚠️ TIDAK ADA SESI
+
+Tunggu admin
+buka sesi baru...`);
+              }
+            }, 5000);
+          }, 1000);
         }
       });
       
@@ -481,36 +513,16 @@ Requesting status...`);
           addLog('📡 Subscribed to RESULT topic');
         }
       });
-      
-      // REQUEST status sesi dari website (penting!)
-      setTimeout(() => {
-        addLog('📤 Requesting session status...');
-        mqttClient.publish(
-          'sunstone/esp32/ESP01/status_request',
-          JSON.stringify({ device_id: CONFIG.deviceId, action: 'request_status' }),
-          { qos: 0 }
-        );
-        
-        // Timeout: kalau 5 detik tidak ada response
-        setTimeout(() => {
-          if (!sessionActive) {
-            addLog('⚠️ No response from website');
-            updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-⚠️ TIDAK ADA SESI
-
-Tunggu admin
-buka sesi baru...`);
-          }
-        }, 5000);
-      }, 1500);
     });
     
     mqttClient.on('message', (topic, payload) => {
       try {
+        addLog(`📩 MQTT Message received`);
+        addLog(`📩 Topic: ${topic}`);
+        addLog(`📩 Raw payload: ${payload.toString()}`);
+        
         const data = JSON.parse(payload.toString());
+        addLog(`📩 Parsed: ${JSON.stringify(data)}`);
         
         if (topic === CONFIG.mqtt.topics.cmd) {
           handleCommand(data);
@@ -518,7 +530,7 @@ buka sesi baru...`);
           handleResult(data);
         }
       } catch (e) {
-        addLog('❌ Invalid message format');
+        addLog('❌ Invalid message format: ' + e.message);
       }
     });
     
