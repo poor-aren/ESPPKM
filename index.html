@@ -465,8 +465,8 @@ MQTT: Connecting...`);
 WiFi: SUNSTONE ✓
 MQTT: Connected ✓
 
-<span class="oled-blink">Menunggu sesi...</span>
-Admin belum buka sesi`);
+<span class="oled-blink">Checking session...</span>
+Requesting status...`);
       
       // Subscribe to command topic
       mqttClient.subscribe(CONFIG.mqtt.topics.cmd, (err) => {
@@ -481,6 +481,31 @@ Admin belum buka sesi`);
           addLog('📡 Subscribed to RESULT topic');
         }
       });
+      
+      // REQUEST status sesi dari website (penting!)
+      setTimeout(() => {
+        addLog('📤 Requesting session status...');
+        mqttClient.publish(
+          'sunstone/esp32/ESP01/status_request',
+          JSON.stringify({ device_id: CONFIG.deviceId, action: 'request_status' }),
+          { qos: 0 }
+        );
+        
+        // Timeout: kalau 5 detik tidak ada response
+        setTimeout(() => {
+          if (!sessionActive) {
+            addLog('⚠️ No response from website');
+            updateOLED(`░░░░░░░░░░░░░░░░░░░░
+░ SUNSTONE ESP32 ░
+░░░░░░░░░░░░░░░░░░░░
+
+⚠️ TIDAK ADA SESI
+
+Tunggu admin
+buka sesi baru...`);
+          }
+        }, 5000);
+      }, 1500);
     });
     
     mqttClient.on('message', (topic, payload) => {
@@ -553,18 +578,21 @@ Tunggu admin
 buka sesi baru...`);
     document.getElementById('btnStart').disabled = true;
   } else if (cmd.action === 'session_ready') {
-    addLog('✅ Session ready: ' + cmd.patient_name);
+    addLog('✅ Session ready: ' + (cmd.patient_name || 'Unknown'));
     sessionActive = true;
+    const patientName = cmd.patient_name || 'Pasien';
+    const shortName = patientName.length > 15 ? patientName.substring(0, 15) + '...' : patientName;
     updateOLED(`░░░░░░░░░░░░░░░░░░░░
 ░ SUNSTONE ESP32 ░
 ░░░░░░░░░░░░░░░░░░░░
 
-✅ SESI SIAP
+✅ SESI SIAP!
 
-Pasien: ${cmd.patient_name.substring(0, 15)}
+Pasien: ${shortName}
 
 <span class="oled-blink">Tekan MULAI</span>`);
     document.getElementById('btnStart').disabled = false;
+    addLog('✅ Start button ENABLED');
   } else if (cmd.action === 'session_active') {
     sessionActive = true;
     if (!isPublishing && !isCalibrating) {
