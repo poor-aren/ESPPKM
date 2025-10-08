@@ -166,6 +166,15 @@
       font-size: 10px;
       color: #7f8c8d;
     }
+
+    .slider-box {
+      margin-top: 10px;
+      text-align: left;
+      font-size: 12px;
+    }
+    input[type=range] {
+      width: 100%;
+    }
     
     .controls {
       display: flex;
@@ -252,15 +261,12 @@
       color: #7f8c8d;
     }
 
-    /* Scrollbar styling */
     .log-section::-webkit-scrollbar {
       width: 6px;
     }
-    
     .log-section::-webkit-scrollbar-track {
       background: #000;
     }
-    
     .log-section::-webkit-scrollbar-thumb {
       background: #2ecc71;
       border-radius: 3px;
@@ -315,23 +321,35 @@ System Initializing...
     <div class="sensor-values">
       <div class="sensor-box">
         <div class="sensor-name">MG-811 (CO₂)</div>
-        <div class="sensor-value" id="mg811">---</div>
+        <div class="sensor-value" id="mg811">300</div>
         <div class="sensor-unit">ppm</div>
+        <div class="slider-box">
+          <input type="range" id="sliderMg811" min="100" max="1000" value="300" oninput="setSensorValue('mg811', this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-7 (CO)</div>
-        <div class="sensor-value" id="mq7">---</div>
+        <div class="sensor-value" id="mq7">200</div>
         <div class="sensor-unit">ppm</div>
+        <div class="slider-box">
+          <input type="range" id="sliderMq7" min="50" max="600" value="200" oninput="setSensorValue('mq7', this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-3 (Etanol)</div>
-        <div class="sensor-value" id="mq3">---</div>
+        <div class="sensor-value" id="mq3">150</div>
         <div class="sensor-unit">ppm</div>
+        <div class="slider-box">
+          <input type="range" id="sliderMq3" min="50" max="400" value="150" oninput="setSensorValue('mq3', this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-135 (VOC)</div>
-        <div class="sensor-value" id="mq135">---</div>
+        <div class="sensor-value" id="mq135">350</div>
         <div class="sensor-unit">ppm</div>
+        <div class="slider-box">
+          <input type="range" id="sliderMq135" min="100" max="800" value="350" oninput="setSensorValue('mq135', this.value)">
+        </div>
       </div>
     </div>
     
@@ -378,8 +396,8 @@ const CONFIG = {
       result: 'sunstone/esp32/ESP01/result'
     }
   },
-  publishInterval: 2000, // 2 seconds
-  calibrationTime: 5000  // 5 seconds
+  publishInterval: 2000,
+  calibrationTime: 5000
 };
 
 // ============================================
@@ -391,10 +409,10 @@ let isPublishing = false;
 let isCalibrating = false;
 let publishTimer = null;
 let packetCount = 0;
-let sessionActive = false; // Track apakah ada sesi aktif di website
+let sessionActive = false;
 
-// Sensor baseline values
-let sensorBaseline = {
+// Sensor manual values
+let sensorValues = {
   mg811: 300,
   mq7: 200,
   mq3: 150,
@@ -412,8 +430,6 @@ function addLog(message) {
   logEntry.textContent = `[${timestamp}] ${message}`;
   logSection.appendChild(logEntry);
   logSection.scrollTop = logSection.scrollHeight;
-  
-  // Keep only last 20 logs
   while (logSection.children.length > 20) {
     logSection.removeChild(logSection.firstChild);
   }
@@ -433,18 +449,16 @@ function updateStatus(element, text, indicatorClass) {
   }
 }
 
+function setSensorValue(sensor, value) {
+  sensorValues[sensor] = parseInt(value);
+  document.getElementById(sensor).textContent = value;
+}
+
 // ============================================
 // MQTT CONNECTION
 // ============================================
 function connectMQTT() {
   addLog('Connecting to MQTT broker...');
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-WiFi: Connecting...
-MQTT: Connecting...`);
-  
   try {
     mqttClient = mqtt.connect(CONFIG.mqtt.broker, {
       clientId: CONFIG.mqtt.clientId,
@@ -457,80 +471,17 @@ MQTT: Connecting...`);
       addLog('✅ MQTT Connected');
       updateStatus('wifiStatus', 'Connected ✓', 'indicator-connected');
       updateStatus('mqttStatus', 'Connected', 'indicator-connected');
-      
-      updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-WiFi: SUNSTONE ✓
-MQTT: Connected ✓
-
-<span class="oled-blink">Checking session...</span>
-Requesting status...`);
-      
-      // Subscribe to command topic
-      mqttClient.subscribe(CONFIG.mqtt.topics.cmd, (err) => {
-        if (!err) {
-          addLog('📡 Subscribed to CMD topic');
-          
-          // REQUEST status SETELAH subscribe berhasil
-          setTimeout(() => {
-            addLog('📤 Requesting session status...');
-            mqttClient.publish(
-              'sunstone/esp32/ESP01/status_request',
-              JSON.stringify({ device_id: CONFIG.deviceId, action: 'request_status' }),
-              { qos: 0 },
-              (err) => {
-                if (err) {
-                  addLog('❌ Failed to send status request: ' + err.message);
-                } else {
-                  addLog('✅ Status request sent successfully');
-                }
-              }
-            );
-            
-            // Timeout: kalau 5 detik tidak ada response
-            setTimeout(() => {
-              if (!sessionActive) {
-                addLog('⚠️ No response from website (5s timeout)');
-                updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-⚠️ TIDAK ADA SESI
-
-Tunggu admin
-buka sesi baru...`);
-              }
-            }, 5000);
-          }, 1000);
-        }
-      });
-      
-      // Subscribe to result topic (optional)
-      mqttClient.subscribe(CONFIG.mqtt.topics.result, (err) => {
-        if (!err) {
-          addLog('📡 Subscribed to RESULT topic');
-        }
-      });
+      mqttClient.subscribe(CONFIG.mqtt.topics.cmd);
+      mqttClient.subscribe(CONFIG.mqtt.topics.result);
     });
     
     mqttClient.on('message', (topic, payload) => {
       try {
-        addLog(`📩 MQTT Message received`);
-        addLog(`📩 Topic: ${topic}`);
-        addLog(`📩 Raw payload: ${payload.toString()}`);
-        
         const data = JSON.parse(payload.toString());
-        addLog(`📩 Parsed: ${JSON.stringify(data)}`);
-        
-        if (topic === CONFIG.mqtt.topics.cmd) {
-          handleCommand(data);
-        } else if (topic === CONFIG.mqtt.topics.result) {
-          handleResult(data);
-        }
+        if (topic === CONFIG.mqtt.topics.cmd) handleCommand(data);
+        else if (topic === CONFIG.mqtt.topics.result) handleResult(data);
       } catch (e) {
-        addLog('❌ Invalid message format: ' + e.message);
+        addLog('❌ Invalid message: ' + e.message);
       }
     });
     
@@ -544,15 +495,8 @@ buka sesi baru...`);
       addLog('🔌 MQTT Disconnected');
       updateStatus('mqttStatus', 'Disconnected', 'indicator-disconnected');
     });
-    
-    mqttClient.on('reconnect', () => {
-      addLog('🔄 MQTT Reconnecting...');
-      updateStatus('mqttStatus', 'Reconnecting...', 'indicator-idle');
-    });
-    
   } catch (err) {
     addLog('❌ Failed to connect: ' + err.message);
-    updateStatus('mqttStatus', 'Error', 'indicator-disconnected');
   }
 }
 
@@ -561,97 +505,18 @@ buka sesi baru...`);
 // ============================================
 function handleCommand(cmd) {
   addLog('📥 Command: ' + JSON.stringify(cmd));
-  
-  if (cmd.action === 'close_session') {
-    addLog('🛑 Session closed by admin');
-    sessionActive = false;
-    stopPublishing();
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Sesi Selesai!
-
-Terima kasih
-Menunggu sesi baru...`);
-  } else if (cmd.action === 'no_session') {
-    addLog('⚠️ No active session');
-    sessionActive = false;
-    if (isPublishing) {
-      stopPublishing();
-    }
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-⚠️ TIDAK ADA SESI
-
-Tunggu admin
-buka sesi baru...`);
-    document.getElementById('btnStart').disabled = true;
-  } else if (cmd.action === 'session_ready') {
-    addLog('✅ Session ready: ' + (cmd.patient_name || 'Unknown'));
+  if (cmd.action === 'session_ready') {
     sessionActive = true;
-    const patientName = cmd.patient_name || 'Pasien';
-    const shortName = patientName.length > 15 ? patientName.substring(0, 15) + '...' : patientName;
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-✅ SESI SIAP!
-
-Pasien: ${shortName}
-
-<span class="oled-blink">Tekan MULAI</span>`);
     document.getElementById('btnStart').disabled = false;
-    addLog('✅ Start button ENABLED');
-  } else if (cmd.action === 'session_active') {
-    sessionActive = true;
-    if (!isPublishing && !isCalibrating) {
-      document.getElementById('btnStart').disabled = false;
-    }
   }
 }
 
 // ============================================
-// RESULT HANDLER (Optional)
+// RESULT HANDLER
 // ============================================
 function handleResult(result) {
   addLog('📊 Result: ' + result.category);
-  
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Hasil Analisis:
-${result.category}
-
-Confidence:
-${(result.confidence * 100).toFixed(1)}%`);
-}
-
-// ============================================
-// SENSOR SIMULATION
-// ============================================
-function generateSensorData() {
-  // Simulate realistic sensor variations
-  const variance = 30;
-  
-  return {
-    device_id: CONFIG.deviceId,
-    ts: new Date().toISOString(),
-    mg811: Math.floor(sensorBaseline.mg811 + (Math.random() - 0.5) * variance),
-    mq7: Math.floor(sensorBaseline.mq7 + (Math.random() - 0.5) * variance * 0.7),
-    mq3: Math.floor(sensorBaseline.mq3 + (Math.random() - 0.5) * variance * 0.5),
-    mq135: Math.floor(sensorBaseline.mq135 + (Math.random() - 0.5) * variance * 0.8)
-  };
-}
-
-function updateSensorDisplay(data) {
-  document.getElementById('mg811').textContent = data.mg811;
-  document.getElementById('mq7').textContent = data.mq7;
-  document.getElementById('mq3').textContent = data.mq3;
-  document.getElementById('mq135').textContent = data.mq135;
+  updateOLED(`Hasil: ${result.category}, ${result.confidence * 100}%`);
 }
 
 // ============================================
@@ -659,59 +524,15 @@ function updateSensorDisplay(data) {
 // ============================================
 function calibrateSensors() {
   if (isCalibrating || isPublishing) return;
-  
   isCalibrating = true;
   document.getElementById('btnCalibrate').disabled = true;
   document.getElementById('btnStart').disabled = true;
-  
   addLog('🔄 Kalibrasi dimulai...');
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-<span class="oled-blink">Burning sensor...</span>
-Mohon tunggu 5 detik
-
-Jangan tiup sensor!`);
-  
-  let countdown = 5;
-  const countdownInterval = setInterval(() => {
-    countdown--;
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-<span class="oled-blink">Burning sensor...</span>
-${countdown} detik lagi
-
-Jangan tiup sensor!`);
-  }, 1000);
-  
   setTimeout(() => {
-    clearInterval(countdownInterval);
     isCalibrating = false;
-    
-    // Randomize baseline slightly
-    sensorBaseline = {
-      mg811: 280 + Math.floor(Math.random() * 40),
-      mq7: 180 + Math.floor(Math.random() * 40),
-      mq3: 130 + Math.floor(Math.random() * 40),
-      mq135: 330 + Math.floor(Math.random() * 40)
-    };
-    
     addLog('✅ Kalibrasi selesai');
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Kalibrasi Selesai ✓
-
-<span class="oled-blink">Menunggu sesi...</span>
-Admin belum buka sesi`);
-    
     document.getElementById('btnCalibrate').disabled = false;
-    // JANGAN enable btnStart dulu, tunggu command session_ready
-    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStart').disabled = false;
   }, CONFIG.calibrationTime);
 }
 
@@ -719,141 +540,23 @@ Admin belum buka sesi`);
 // PUBLISHING
 // ============================================
 function startPublishing() {
-  if (!mqttConnected) {
-    addLog('❌ MQTT not connected!');
-    alert('MQTT belum terhubung. Tunggu beberapa saat...');
-    return;
-  }
-  
-  if (!sessionActive) {
-    addLog('❌ No active session!');
-    alert('⚠️ Belum ada sesi yang dibuka di website!\n\nMinta admin buka sesi pasien dulu.');
-    return;
-  }
-  
-  if (isCalibrating) {
-    addLog('⚠️ Wait for calibration to finish');
-    return;
-  }
-  
+  if (!mqttConnected) return;
+  if (!sessionActive) return;
   isPublishing = true;
   packetCount = 0;
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnStop').disabled = false;
-  document.getElementById('btnCalibrate').disabled = true;
-  
-  addLog('▶️ Publishing started');
-  updateStatus('publishStatus', 'Publishing...', null);
-  document.getElementById('publishStatus').style.color = '#2ecc71';
-  
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-<span class="oled-blink">SEDANG MEREKAM</span>
-
-Tiup sensor sekarang
-Nafas panjang...`);
-  
-  // Initial publish
   publishData();
-  
-  // Set interval
   publishTimer = setInterval(publishData, CONFIG.publishInterval);
 }
 
 function publishData() {
-  if (!mqttConnected) {
-    stopPublishing();
-    return;
-  }
-  
-  const sensorData = generateSensorData();
-  updateSensorDisplay(sensorData);
-  
-  try {
-    mqttClient.publish(
-      CONFIG.mqtt.topics.sensor,
-      JSON.stringify(sensorData),
-      { qos: 0 },
-      (err) => {
-        if (err) {
-          addLog('❌ Publish failed: ' + err.message);
-        } else {
-          packetCount++;
-          document.getElementById('packetCount').textContent = packetCount;
-          addLog(`📤 Published #${packetCount}`);
-        }
-      }
-    );
-  } catch (err) {
-    addLog('❌ Publish error: ' + err.message);
-  }
-}
-
-function stopPublishing() {
-  if (!isPublishing) return;
-  
-  isPublishing = false;
-  
-  if (publishTimer) {
-    clearInterval(publishTimer);
-    publishTimer = null;
-  }
-  
-  document.getElementById('btnStart').disabled = false;
-  document.getElementById('btnStop').disabled = true;
-  document.getElementById('btnCalibrate').disabled = false;
-  
-  addLog('⏹️ Publishing stopped');
-  updateStatus('publishStatus', 'Idle', null);
-  document.getElementById('publishStatus').style.color = '#95a5a6';
-  
-  // Cek apakah masih ada sesi aktif
-  if (sessionActive) {
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Perekaman Selesai
-
-Total: ${packetCount} paket
-<span class="oled-blink">Siap rekam lagi...</span>`);
-  } else {
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Perekaman Selesai
-
-Total: ${packetCount} paket
-Menunggu sesi baru...`);
-  }
-}
-
-// ============================================
-// INITIALIZATION
-// ============================================
-window.addEventListener('load', () => {
-  addLog('🚀 ESP32 Simulator starting...');
-  addLog('Device ID: ' + CONFIG.deviceId);
-  
-  // Disable start button sampai ada sesi
-  document.getElementById('btnStart').disabled = true;
-  
-  // Auto-connect MQTT after 1 second
-  setTimeout(() => {
-    connectMQTT();
-  }, 1000);
-});
-
-// Handle page close
-window.addEventListener('beforeunload', () => {
-  if (mqttClient) {
-    stopPublishing();
-    mqttClient.end();
-  }
-});
-</script>
-</body>
-</html>
+  if (!mqttConnected) { stopPublishing(); return; }
+  const sensorData = {
+    device_id: CONFIG.deviceId,
+    ts: new Date().toISOString(),
+    ...sensorValues
+  };
+  mqttClient.publish(CONFIG.mqtt.topics.sensor, JSON.stringify(sensorData));
+  packetCount++;
+  document.getElementById('packetCount').textContent =
