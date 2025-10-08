@@ -1,859 +1,140 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ESP32 Simulator - SUNSTONE</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESP32 Simulator</title>
+  <script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Courier New', monospace;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    
-    .esp32-container {
-      background: #2c3e50;
-      border: 4px solid #34495e;
-      border-radius: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      max-width: 500px;
-      width: 100%;
-      padding: 30px;
-      color: #ecf0f1;
-    }
-    
-    .esp32-header {
-      text-align: center;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #34495e;
-      padding-bottom: 20px;
-    }
-    
-    .esp32-title {
-      font-size: 28px;
-      font-weight: bold;
-      color: #3498db;
-      margin-bottom: 5px;
-    }
-    
-    .esp32-subtitle {
-      font-size: 14px;
-      color: #95a5a6;
-    }
-    
-    .device-id {
-      display: inline-block;
-      background: #e74c3c;
-      color: white;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    
-    .oled-display {
-      background: #000;
-      color: #0f0;
-      font-family: 'Courier New', monospace;
-      padding: 20px;
-      border-radius: 10px;
-      min-height: 120px;
-      font-size: 14px;
-      margin-bottom: 20px;
-      border: 3px solid #1a1a1a;
-      box-shadow: inset 0 0 20px rgba(0,255,0,0.3);
-      line-height: 1.6;
-    }
-    
-    .oled-blink {
-      animation: blink 1s infinite;
-    }
-    
-    @keyframes blink {
-      0%, 50%, 100% { opacity: 1; }
-      25%, 75% { opacity: 0.3; }
-    }
-    
-    .status-section {
-      background: #34495e;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-    
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-    
-    .status-row:last-child {
-      margin-bottom: 0;
-    }
-    
-    .status-label {
-      color: #95a5a6;
-    }
-    
-    .status-value {
-      font-weight: bold;
-      color: #ecf0f1;
-    }
-    
-    .status-indicator {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-left: 8px;
-    }
-    
-    .indicator-connected {
-      background: #2ecc71;
-      box-shadow: 0 0 10px #2ecc71;
-    }
-    
-    .indicator-disconnected {
-      background: #e74c3c;
-      box-shadow: 0 0 10px #e74c3c;
-    }
-    
-    .indicator-idle {
-      background: #f39c12;
-      box-shadow: 0 0 10px #f39c12;
-    }
-    
-    .sensor-values {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    
-    .sensor-box {
-      background: #34495e;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    
-    .sensor-name {
-      font-size: 11px;
-      color: #95a5a6;
-      margin-bottom: 5px;
-    }
-    
-    .sensor-value {
-      font-size: 22px;
-      font-weight: bold;
-      color: #3498db;
-    }
-    
-    .sensor-unit {
-      font-size: 10px;
-      color: #7f8c8d;
-    }
-    
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .btn {
-      flex: 1;
-      padding: 15px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 14px;
-      text-transform: uppercase;
-    }
-    
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .btn-start {
-      background: #27ae60;
-      color: white;
-    }
-    
-    .btn-start:hover:not(:disabled) {
-      background: #2ecc71;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(46,204,113,0.4);
-    }
-    
-    .btn-stop {
-      background: #c0392b;
-      color: white;
-    }
-    
-    .btn-stop:hover:not(:disabled) {
-      background: #e74c3c;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(231,76,60,0.4);
-    }
-    
-    .btn-calibrate {
-      background: #2980b9;
-      color: white;
-    }
-    
-    .btn-calibrate:hover:not(:disabled) {
-      background: #3498db;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(52,152,219,0.4);
-    }
-    
-    .log-section {
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 11px;
-      color: #2ecc71;
-    }
-    
-    .log-entry {
-      margin-bottom: 5px;
-      opacity: 0.8;
-    }
-    
-    .log-entry:last-child {
-      opacity: 1;
-      font-weight: bold;
-    }
-    
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      padding-top: 15px;
-      border-top: 1px solid #34495e;
-      font-size: 11px;
-      color: #7f8c8d;
-    }
-
-    /* Scrollbar styling */
-    .log-section::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    .log-section::-webkit-scrollbar-track {
-      background: #000;
-    }
-    
-    .log-section::-webkit-scrollbar-thumb {
-      background: #2ecc71;
-      border-radius: 3px;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Courier New', monospace; background:#1a1a2e; color:#eee; }
+    .wrap { max-width:600px; margin:40px auto; padding:25px; background:#16213e; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    h2 { color:#0f3; margin-bottom:20px; text-align:center; }
+    .info { display:flex; justify-content:space-between; margin-bottom:15px; padding:12px; background:#0f1419; border-radius:6px; }
+    .info .label { color:#888; font-size:13px; }
+    .info .value { color:#0f3; font-weight:600; }
+    #oled { background:#000; color:#0f3; padding:15px; border-radius:8px; min-height:120px; font-size:13px; line-height:1.6; margin-bottom:20px; white-space:pre-wrap; border:2px solid #0f3; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn { flex:1; min-width:140px; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s; }
+    .btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .btn.start { background:#0f3; color:#000; }
+    .btn.start:hover:not(:disabled) { background:#0d0; }
+    .btn.stop { background:#f33; color:#fff; }
+    .btn.stop:hover:not(:disabled) { background:#d00; }
+    .btn.cal { background:#fa0; color:#000; }
+    .btn.cal:hover:not(:disabled) { background:#f80; }
   </style>
 </head>
 <body>
-  <div class="esp32-container">
-    <!-- Header -->
-    <div class="esp32-header">
-      <div class="esp32-title">🔧 ESP32 SIMULATOR</div>
-      <div class="esp32-subtitle">SUNSTONE Device Emulator</div>
-      <div class="device-id" id="deviceId">ESP01</div>
+  <div class="wrap">
+    <h2>🔌 ESP32 Simulator</h2>
+    
+    <div class="info">
+      <div><div class="label">Device ID</div><div class="value" id="dev">ESP01</div></div>
+      <div><div class="label">MQTT Status</div><div class="value" id="st">Connecting…</div></div>
     </div>
-    
-    <!-- OLED Display -->
-    <div class="oled-display" id="oledDisplay">
-░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-    
-System Initializing...
-    </div>
-    
-    <!-- Status Section -->
-    <div class="status-section">
-      <div class="status-row">
-        <span class="status-label">WiFi:</span>
-        <span class="status-value">
-          <span id="wifiStatus">Connecting...</span>
-          <span class="status-indicator" id="wifiIndicator"></span>
-        </span>
-      </div>
-      <div class="status-row">
-        <span class="status-label">MQTT:</span>
-        <span class="status-value">
-          <span id="mqttStatus">Disconnected</span>
-          <span class="status-indicator indicator-disconnected" id="mqttIndicator"></span>
-        </span>
-      </div>
-      <div class="status-row">
-        <span class="status-label">Publishing:</span>
-        <span class="status-value" id="publishStatus">Idle</span>
-      </div>
-      <div class="status-row">
-        <span class="status-label">Packets Sent:</span>
-        <span class="status-value" id="packetCount">0</span>
-      </div>
-    </div>
-    
-    <!-- Sensor Values -->
-    <div class="sensor-values">
-      <div class="sensor-box">
-        <div class="sensor-name">MG-811 (CO₂)</div>
-        <div class="sensor-value" id="mg811">---</div>
-        <div class="sensor-unit">ppm</div>
-      </div>
-      <div class="sensor-box">
-        <div class="sensor-name">MQ-7 (CO)</div>
-        <div class="sensor-value" id="mq7">---</div>
-        <div class="sensor-unit">ppm</div>
-      </div>
-      <div class="sensor-box">
-        <div class="sensor-name">MQ-3 (Etanol)</div>
-        <div class="sensor-value" id="mq3">---</div>
-        <div class="sensor-unit">ppm</div>
-      </div>
-      <div class="sensor-box">
-        <div class="sensor-name">MQ-135 (VOC)</div>
-        <div class="sensor-value" id="mq135">---</div>
-        <div class="sensor-unit">ppm</div>
-      </div>
-    </div>
-    
-    <!-- Controls -->
+
+    <pre id="oled">🔄 Booting ESP32…</pre>
+
     <div class="controls">
-      <button class="btn btn-calibrate" id="btnCalibrate" onclick="calibrateSensors()">
-        🔄 Kalibrasi
-      </button>
-    </div>
-    <div class="controls">
-      <button class="btn btn-start" id="btnStart" onclick="startPublishing()">
-        ▶️ Mulai
-      </button>
-      <button class="btn btn-stop" id="btnStop" onclick="stopPublishing()" disabled>
-        ⏹️ Stop
-      </button>
-    </div>
-    
-    <!-- Log Section -->
-    <div class="log-section" id="logSection">
-      <div class="log-entry">[INIT] ESP32 starting...</div>
-    </div>
-    
-    <!-- Footer -->
-    <div class="footer">
-      Simulate ESP32 behavior without hardware<br>
-      Connect to same MQTT broker as main website
+      <button id="startBtn" class="btn start" disabled>▶️ Mulai</button>
+      <button id="stopBtn" class="btn stop" disabled>⏸️ Stop</button>
+      <button id="calBtn" class="btn cal" disabled>🔧 Kalibrasi</button>
     </div>
   </div>
 
-<script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
-<script>
-// ============================================
-// CONFIGURATION
-// ============================================
-const CONFIG = {
-  deviceId: 'ESP01',
-  mqtt: {
+  <script>
+  const CONFIG = {
     broker: 'wss://broker.hivemq.com:8884/mqtt',
-    clientId: 'sunstone_esp32_' + Math.random().toString(16).substr(2, 8),
-    topics: {
-      sensor: 'sunstone/esp32/ESP01/sensor',
-      cmd: 'sunstone/esp32/ESP01/cmd',
-      result: 'sunstone/esp32/ESP01/result'
-    }
-  },
-  publishInterval: 2000, // 2 seconds
-  calibrationTime: 5000  // 5 seconds
-};
-
-// ============================================
-// GLOBAL STATE
-// ============================================
-let mqttClient = null;
-let mqttConnected = false;
-let isPublishing = false;
-let isCalibrating = false;
-let publishTimer = null;
-let packetCount = 0;
-let sessionActive = false; // Track apakah ada sesi aktif di website
-
-// Sensor baseline values
-let sensorBaseline = {
-  mg811: 300,
-  mq7: 200,
-  mq3: 150,
-  mq135: 350
-};
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function addLog(message) {
-  const logSection = document.getElementById('logSection');
-  const timestamp = new Date().toLocaleTimeString('id-ID');
-  const logEntry = document.createElement('div');
-  logEntry.className = 'log-entry';
-  logEntry.textContent = `[${timestamp}] ${message}`;
-  logSection.appendChild(logEntry);
-  logSection.scrollTop = logSection.scrollHeight;
-  
-  // Keep only last 20 logs
-  while (logSection.children.length > 20) {
-    logSection.removeChild(logSection.firstChild);
-  }
-}
-
-function updateOLED(text) {
-  document.getElementById('oledDisplay').innerHTML = text;
-}
-
-function updateStatus(element, text, indicatorClass) {
-  document.getElementById(element).textContent = text;
-  if (indicatorClass) {
-    const indicator = document.getElementById(element + 'Indicator');
-    if (indicator) {
-      indicator.className = 'status-indicator ' + indicatorClass;
-    }
-  }
-}
-
-// ============================================
-// MQTT CONNECTION
-// ============================================
-function connectMQTT() {
-  addLog('Connecting to MQTT broker...');
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-WiFi: Connecting...
-MQTT: Connecting...`);
-  
-  try {
-    mqttClient = mqtt.connect(CONFIG.mqtt.broker, {
-      clientId: CONFIG.mqtt.clientId,
-      clean: true,
-      reconnectPeriod: 3000
-    });
-    
-    mqttClient.on('connect', () => {
-      mqttConnected = true;
-      addLog('✅ MQTT Connected');
-      updateStatus('wifiStatus', 'Connected ✓', 'indicator-connected');
-      updateStatus('mqttStatus', 'Connected', 'indicator-connected');
-      
-      updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-WiFi: SUNSTONE ✓
-MQTT: Connected ✓
-
-<span class="oled-blink">Checking session...</span>
-Requesting status...`);
-      
-      // Subscribe to command topic
-      mqttClient.subscribe(CONFIG.mqtt.topics.cmd, (err) => {
-        if (!err) {
-          addLog('📡 Subscribed to CMD topic');
-          
-          // REQUEST status SETELAH subscribe berhasil
-          setTimeout(() => {
-            addLog('📤 Requesting session status...');
-            mqttClient.publish(
-              'sunstone/esp32/ESP01/status_request',
-              JSON.stringify({ device_id: CONFIG.deviceId, action: 'request_status' }),
-              { qos: 0 },
-              (err) => {
-                if (err) {
-                  addLog('❌ Failed to send status request: ' + err.message);
-                } else {
-                  addLog('✅ Status request sent successfully');
-                }
-              }
-            );
-            
-            // Timeout: kalau 5 detik tidak ada response
-            setTimeout(() => {
-              if (!sessionActive) {
-                addLog('⚠️ No response from website (5s timeout)');
-                updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-⚠️ TIDAK ADA SESI
-
-Tunggu admin
-buka sesi baru...`);
-              }
-            }, 5000);
-          }, 1000);
-        }
-      });
-      
-      // Subscribe to result topic (optional)
-      mqttClient.subscribe(CONFIG.mqtt.topics.result, (err) => {
-        if (!err) {
-          addLog('📡 Subscribed to RESULT topic');
-        }
-      });
-    });
-    
-    mqttClient.on('message', (topic, payload) => {
-      try {
-        addLog(`📩 MQTT Message received`);
-        addLog(`📩 Topic: ${topic}`);
-        addLog(`📩 Raw payload: ${payload.toString()}`);
-        
-        const data = JSON.parse(payload.toString());
-        addLog(`📩 Parsed: ${JSON.stringify(data)}`);
-        
-        if (topic === CONFIG.mqtt.topics.cmd) {
-          handleCommand(data);
-        } else if (topic === CONFIG.mqtt.topics.result) {
-          handleResult(data);
-        }
-      } catch (e) {
-        addLog('❌ Invalid message format: ' + e.message);
-      }
-    });
-    
-    mqttClient.on('error', (err) => {
-      addLog('❌ MQTT Error: ' + err.message);
-      updateStatus('mqttStatus', 'Error', 'indicator-disconnected');
-    });
-    
-    mqttClient.on('close', () => {
-      mqttConnected = false;
-      addLog('🔌 MQTT Disconnected');
-      updateStatus('mqttStatus', 'Disconnected', 'indicator-disconnected');
-    });
-    
-    mqttClient.on('reconnect', () => {
-      addLog('🔄 MQTT Reconnecting...');
-      updateStatus('mqttStatus', 'Reconnecting...', 'indicator-idle');
-    });
-    
-  } catch (err) {
-    addLog('❌ Failed to connect: ' + err.message);
-    updateStatus('mqttStatus', 'Error', 'indicator-disconnected');
-  }
-}
-
-// ============================================
-// COMMAND HANDLER
-// ============================================
-function handleCommand(cmd) {
-  addLog('📥 Command: ' + JSON.stringify(cmd));
-  
-  if (cmd.action === 'close_session') {
-    addLog('🛑 Session closed by admin');
-    sessionActive = false;
-    stopPublishing();
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Sesi Selesai!
-
-Terima kasih
-Menunggu sesi baru...`);
-  } else if (cmd.action === 'no_session') {
-    addLog('⚠️ No active session');
-    sessionActive = false;
-    if (isPublishing) {
-      stopPublishing();
-    }
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-⚠️ TIDAK ADA SESI
-
-Tunggu admin
-buka sesi baru...`);
-    document.getElementById('btnStart').disabled = true;
-  } else if (cmd.action === 'session_ready') {
-    addLog('✅ Session ready: ' + (cmd.patient_name || 'Unknown'));
-    sessionActive = true;
-    const patientName = cmd.patient_name || 'Pasien';
-    const shortName = patientName.length > 15 ? patientName.substring(0, 15) + '...' : patientName;
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-✅ SESI SIAP!
-
-Pasien: ${shortName}
-
-<span class="oled-blink">Tekan MULAI</span>`);
-    document.getElementById('btnStart').disabled = false;
-    addLog('✅ Start button ENABLED');
-  } else if (cmd.action === 'session_active') {
-    sessionActive = true;
-    if (!isPublishing && !isCalibrating) {
-      document.getElementById('btnStart').disabled = false;
-    }
-  }
-}
-
-// ============================================
-// RESULT HANDLER (Optional)
-// ============================================
-function handleResult(result) {
-  addLog('📊 Result: ' + result.category);
-  
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Hasil Analisis:
-${result.category}
-
-Confidence:
-${(result.confidence * 100).toFixed(1)}%`);
-}
-
-// ============================================
-// SENSOR SIMULATION
-// ============================================
-function generateSensorData() {
-  // Simulate realistic sensor variations
-  const variance = 30;
-  
-  return {
-    device_id: CONFIG.deviceId,
-    ts: new Date().toISOString(),
-    mg811: Math.floor(sensorBaseline.mg811 + (Math.random() - 0.5) * variance),
-    mq7: Math.floor(sensorBaseline.mq7 + (Math.random() - 0.5) * variance * 0.7),
-    mq3: Math.floor(sensorBaseline.mq3 + (Math.random() - 0.5) * variance * 0.5),
-    mq135: Math.floor(sensorBaseline.mq135 + (Math.random() - 0.5) * variance * 0.8)
+    clientId: 'esp32_sim_' + Math.random().toString(16).slice(2),
+    topics: { sensor: 'sunstone/esp32/ESP01/sensor', cmd: 'sunstone/esp32/ESP01/cmd' }
   };
-}
 
-function updateSensorDisplay(data) {
-  document.getElementById('mg811').textContent = data.mg811;
-  document.getElementById('mq7').textContent = data.mq7;
-  document.getElementById('mq3').textContent = data.mq3;
-  document.getElementById('mq135').textContent = data.mq135;
-}
+  let mqttClient, timer, sessionOpen = false;
 
-// ============================================
-// CALIBRATION
-// ============================================
-function calibrateSensors() {
-  if (isCalibrating || isPublishing) return;
-  
-  isCalibrating = true;
-  document.getElementById('btnCalibrate').disabled = true;
-  document.getElementById('btnStart').disabled = true;
-  
-  addLog('🔄 Kalibrasi dimulai...');
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-<span class="oled-blink">Burning sensor...</span>
-Mohon tunggu 5 detik
-
-Jangan tiup sensor!`);
-  
-  let countdown = 5;
-  const countdownInterval = setInterval(() => {
-    countdown--;
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-<span class="oled-blink">Burning sensor...</span>
-${countdown} detik lagi
-
-Jangan tiup sensor!`);
-  }, 1000);
-  
-  setTimeout(() => {
-    clearInterval(countdownInterval);
-    isCalibrating = false;
-    
-    // Randomize baseline slightly
-    sensorBaseline = {
-      mg811: 280 + Math.floor(Math.random() * 40),
-      mq7: 180 + Math.floor(Math.random() * 40),
-      mq3: 130 + Math.floor(Math.random() * 40),
-      mq135: 330 + Math.floor(Math.random() * 40)
-    };
-    
-    addLog('✅ Kalibrasi selesai');
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Kalibrasi Selesai ✓
-
-<span class="oled-blink">Menunggu sesi...</span>
-Admin belum buka sesi`);
-    
-    document.getElementById('btnCalibrate').disabled = false;
-    // JANGAN enable btnStart dulu, tunggu command session_ready
-    document.getElementById('btnStart').disabled = true;
-  }, CONFIG.calibrationTime);
-}
-
-// ============================================
-// PUBLISHING
-// ============================================
-function startPublishing() {
-  if (!mqttConnected) {
-    addLog('❌ MQTT not connected!');
-    alert('MQTT belum terhubung. Tunggu beberapa saat...');
-    return;
+  function logOLED(t) {
+    const lines = oled.textContent.split('\n');
+    lines.push(`[${new Date().toLocaleTimeString()}] ${t}`);
+    oled.textContent = lines.slice(-8).join('\n'); // Keep last 8 lines
   }
-  
-  if (!sessionActive) {
-    addLog('❌ No active session!');
-    alert('⚠️ Belum ada sesi yang dibuka di website!\n\nMinta admin buka sesi pasien dulu.');
-    return;
-  }
-  
-  if (isCalibrating) {
-    addLog('⚠️ Wait for calibration to finish');
-    return;
-  }
-  
-  isPublishing = true;
-  packetCount = 0;
-  document.getElementById('btnStart').disabled = true;
-  document.getElementById('btnStop').disabled = false;
-  document.getElementById('btnCalibrate').disabled = true;
-  
-  addLog('▶️ Publishing started');
-  updateStatus('publishStatus', 'Publishing...', null);
-  document.getElementById('publishStatus').style.color = '#2ecc71';
-  
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
 
-<span class="oled-blink">SEDANG MEREKAM</span>
+  function connectMQTT() {
+    mqttClient = mqtt.connect(CONFIG.broker, { clientId: CONFIG.clientId, clean: true, reconnectPeriod: 3000 });
+    mqttClient.on('connect', () => {
+      st.textContent = 'Connected';
+      st.style.color = '#0f3';
+      mqttClient.subscribe(CONFIG.topics.cmd);
+      logOLED('✅ MQTT Connected');
+      logOLED('⏳ Menunggu sesi…');
+    });
 
-Tiup sensor sekarang
-Nafas panjang...`);
-  
-  // Initial publish
-  publishData();
-  
-  // Set interval
-  publishTimer = setInterval(publishData, CONFIG.publishInterval);
-}
-
-function publishData() {
-  if (!mqttConnected) {
-    stopPublishing();
-    return;
-  }
-  
-  const sensorData = generateSensorData();
-  updateSensorDisplay(sensorData);
-  
-  try {
-    mqttClient.publish(
-      CONFIG.mqtt.topics.sensor,
-      JSON.stringify(sensorData),
-      { qos: 0 },
-      (err) => {
-        if (err) {
-          addLog('❌ Publish failed: ' + err.message);
-        } else {
-          packetCount++;
-          document.getElementById('packetCount').textContent = packetCount;
-          addLog(`📤 Published #${packetCount}`);
-        }
+    mqttClient.on('message', (topic, payload) => {
+      const msg = JSON.parse(payload.toString() || '{}');
+      if (msg.action === 'session_ready') {
+        sessionOpen = true;
+        startBtn.disabled = false;
+        calBtn.disabled = false;
+        logOLED(`🟢 SESI SIAP`);
+        logOLED(`👤 Pasien: ${msg.patient_name || '-'}`);
+      } else if (msg.action === 'no_session') {
+        sessionOpen = false;
+        startBtn.disabled = true;
+        stopPublish();
+        logOLED('🔴 Tidak ada sesi terbuka');
+      } else if (msg.action === 'close_session') {
+        sessionOpen = false;
+        stopPublish();
+        logOLED('🔴 Sesi ditutup oleh web');
       }
-    );
-  } catch (err) {
-    addLog('❌ Publish error: ' + err.message);
+    });
+
+    mqttClient.on('close', () => {
+      st.textContent = 'Disconnected';
+      st.style.color = '#f33';
+      stopPublish();
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+      calBtn.disabled = true;
+      logOLED('❌ MQTT Disconnected');
+    });
   }
-}
 
-function stopPublishing() {
-  if (!isPublishing) return;
-  
-  isPublishing = false;
-  
-  if (publishTimer) {
-    clearInterval(publishTimer);
-    publishTimer = null;
+  function rand(n1, n2) { return Math.round(n1 + (n2 - n1) * Math.random()); }
+
+  function publishOnce() {
+    if (!sessionOpen) return;
+    const data = {
+      device_id: 'ESP01',
+      ts: new Date().toISOString(),
+      mg811: rand(150, 600),
+      mq7: rand(50, 400),
+      mq3: rand(30, 300),
+      mq135: rand(60, 500)
+    };
+    mqttClient.publish(CONFIG.topics.sensor, JSON.stringify(data));
+    logOLED(`📡 Sent: ${data.mg811}|${data.mq7}|${data.mq3}|${data.mq135}`);
   }
-  
-  document.getElementById('btnStart').disabled = false;
-  document.getElementById('btnStop').disabled = true;
-  document.getElementById('btnCalibrate').disabled = false;
-  
-  addLog('⏹️ Publishing stopped');
-  updateStatus('publishStatus', 'Idle', null);
-  document.getElementById('publishStatus').style.color = '#95a5a6';
-  
-  // Cek apakah masih ada sesi aktif
-  if (sessionActive) {
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
 
-Perekaman Selesai
-
-Total: ${packetCount} paket
-<span class="oled-blink">Siap rekam lagi...</span>`);
-  } else {
-    updateOLED(`░░░░░░░░░░░░░░░░░░░░
-░ SUNSTONE ESP32 ░
-░░░░░░░░░░░░░░░░░░░░
-
-Perekaman Selesai
-
-Total: ${packetCount} paket
-Menunggu sesi baru...`);
+  function startPublish() {
+    if (!sessionOpen) return logOLED('⚠️ Tidak ada sesi!');
+    stopPublish();
+    timer = setInterval(publishOnce, 2000);
+    stopBtn.disabled = false;
+    logOLED('▶️ Mulai publish data…');
   }
-}
 
-// ============================================
-// INITIALIZATION
-// ============================================
-window.addEventListener('load', () => {
-  addLog('🚀 ESP32 Simulator starting...');
-  addLog('Device ID: ' + CONFIG.deviceId);
-  
-  // Disable start button sampai ada sesi
-  document.getElementById('btnStart').disabled = true;
-  
-  // Auto-connect MQTT after 1 second
-  setTimeout(() => {
-    connectMQTT();
-  }, 1000);
-});
-
-// Handle page close
-window.addEventListener('beforeunload', () => {
-  if (mqttClient) {
-    stopPublishing();
-    mqttClient.end();
+  function stopPublish() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stopBtn.disabled = true;
+    logOLED('⏸️ Publish dihentikan');
   }
-});
-</script>
+
+  startBtn.onclick = startPublish;
+  stopBtn.onclick = stopPublish;
+  calBtn.onclick = () => logOLED('🔧 Kalibrasi 5s… (simulasi)');
+
+  window.addEventListener('load', () => setTimeout(connectMQTT, 800));
+  window.addEventListener('beforeunload', () => { stopPublish(); if (mqttClient) mqttClient.end(); });
+  </script>
 </body>
 </html>
