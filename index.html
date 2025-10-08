@@ -3,52 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ESP32 Simulator - SUNSTONE</title>
+  <title>ESP32 Web Simulator - SUNSTONE</title>
   <style>
-    body {font-family:'Courier New',monospace;background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;}
-    .esp32-container {background:#2c3e50;border:4px solid #34495e;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.5);max-width:500px;width:100%;padding:30px;color:#ecf0f1;}
-    .sensor-values {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-    .sensor-box {background:#34495e;padding:12px;border-radius:8px;text-align:center;}
-    .sensor-name {font-size:11px;color:#95a5a6;margin-bottom:5px;}
-    .sensor-value {font-size:22px;font-weight:bold;color:#3498db;}
-    .sensor-unit {font-size:10px;color:#7f8c8d;}
-    .slider-box {margin-top:10px;text-align:left;font-size:12px;}
-    input[type=range]{width:100%;}
-    .controls {display:flex;gap:10px;margin-bottom:15px;}
-    .btn{flex:1;padding:15px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
-    .btn-start{background:#27ae60;color:#fff;}
-    .btn-stop{background:#c0392b;color:#fff;}
-    .btn-calibrate{background:#2980b9;color:#fff;}
-    .log-section{background:#1a1a1a;padding:15px;border-radius:10px;max-height:150px;overflow-y:auto;font-size:11px;color:#2ecc71;}
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .esp32-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      max-width: 500px;
+      width: 100%;
+      padding: 20px;
+    }
+    h2 {color:#3b4998;margin-bottom:20px;text-align:center}
+    .sensor-values {display: grid;grid-template-columns: 1fr 1fr;gap: 15px;margin-bottom: 20px;}
+    .sensor-box {background: #f8f9fa;padding: 12px;border-radius: 8px;text-align: center;border:1px solid #ddd;}
+    .sensor-name {font-size: 12px;color: #555;margin-bottom: 5px;}
+    .sensor-value {font-size: 22px;font-weight: bold;color: #3b4998;}
+    .sensor-unit {font-size: 10px;color: #999;}
+    .slider-box {margin-top: 10px;text-align: left;font-size: 12px;}
+    input[type=range] {width: 100%;}
+    .controls {display: flex;gap: 10px;margin-bottom: 15px;}
+    .btn {flex: 1;padding: 12px;border: none;border-radius: 8px;font-weight: bold;cursor: pointer;}
+    .btn-start{background:#28a745;color:#fff;}
+    .btn-stop{background:#dc3545;color:#fff;}
+    .btn-calibrate{background:#007bff;color:#fff;}
+    .log-section{background:#1e1e1e;padding:10px;border-radius:8px;max-height:200px;overflow-y:auto;font-size:11px;color:#0f0;}
   </style>
 </head>
 <body>
   <div class="esp32-container">
-    <h2>🔧 ESP32 SIMULATOR</h2>
+    <h2>🔧 ESP32 WEB SIMULATOR</h2>
     <div class="sensor-values">
       <div class="sensor-box">
         <div class="sensor-name">MG-811 (CO₂)</div>
         <div class="sensor-value" id="mg811">300</div>
         <div class="sensor-unit">ppm</div>
-        <div class="slider-box"><input type="range" min="100" max="1000" value="300" oninput="setSensorValue('mg811',this.value)"></div>
+        <div class="slider-box">
+          <input type="range" min="100" max="1000" value="300" oninput="setSensorValue('mg811',this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-7 (CO)</div>
         <div class="sensor-value" id="mq7">200</div>
         <div class="sensor-unit">ppm</div>
-        <div class="slider-box"><input type="range" min="50" max="600" value="200" oninput="setSensorValue('mq7',this.value)"></div>
+        <div class="slider-box">
+          <input type="range" min="50" max="600" value="200" oninput="setSensorValue('mq7',this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-3 (Etanol)</div>
         <div class="sensor-value" id="mq3">150</div>
         <div class="sensor-unit">ppm</div>
-        <div class="slider-box"><input type="range" min="50" max="400" value="150" oninput="setSensorValue('mq3',this.value)"></div>
+        <div class="slider-box">
+          <input type="range" min="50" max="400" value="150" oninput="setSensorValue('mq3',this.value)">
+        </div>
       </div>
       <div class="sensor-box">
         <div class="sensor-name">MQ-135 (VOC)</div>
         <div class="sensor-value" id="mq135">350</div>
         <div class="sensor-unit">ppm</div>
-        <div class="slider-box"><input type="range" min="100" max="800" value="350" oninput="setSensorValue('mq135',this.value)"></div>
+        <div class="slider-box">
+          <input type="range" min="100" max="800" value="350" oninput="setSensorValue('mq135',this.value)">
+        </div>
       </div>
     </div>
 
@@ -56,96 +80,79 @@
       <button class="btn btn-calibrate" onclick="calibrateSensors()">Kalibrasi</button>
     </div>
     <div class="controls">
-      <button class="btn btn-start" id="btnStart" onclick="startPublishing()" disabled>▶️ Mulai</button>
+      <button class="btn btn-start" id="btnStart" onclick="startPublishing()">▶️ Mulai</button>
       <button class="btn btn-stop" id="btnStop" onclick="stopPublishing()" disabled>⏹️ Stop</button>
     </div>
 
     <div>Packets Sent: <span id="packetCount">0</span></div>
-    <div class="log-section" id="logSection"><div>[INIT] ESP32 starting...</div></div>
+    <div class="log-section" id="logSection"><div>[INIT] ESP32 Web Simulator ready...</div></div>
   </div>
 
 <script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
 <script>
+// CONFIG
 const CONFIG = {
   deviceId:'ESP01',
   mqtt:{
     broker:'wss://broker.hivemq.com:8884/mqtt',
-    clientId:'sunstone_'+Math.random().toString(16).substr(2,8),
-    topics:{
-      sensor:'sunstone/esp32/ESP01/sensor',
-      cmd:'sunstone/esp32/ESP01/cmd',
-      result:'sunstone/esp32/ESP01/result'
-    }
+    clientId:'esp32sim_'+Math.random().toString(16).substr(2,8),
+    topic:'sunstone/esp32/ESP01/sensor'
   },
   publishInterval:2000
 };
 
-let mqttClient=null,mqttConnected=false,isPublishing=false,publishTimer=null,packetCount=0,sessionActive=false;
+// STATE
+let mqttClient=null, mqttConnected=false,isPublishing=false,publishTimer=null,packetCount=0;
 let sensorValues={mg811:300,mq7:200,mq3:150,mq135:350};
 
-function setSensorValue(sensor,val){sensorValues[sensor]=parseInt(val);document.getElementById(sensor).textContent=val;}
-function addLog(msg){let log=document.getElementById("logSection");let ts=new Date().toLocaleTimeString("id-ID");let div=document.createElement("div");div.textContent="["+ts+"] "+msg;log.appendChild(div);log.scrollTop=log.scrollHeight;}
+// UI HELPERS
+function setSensorValue(sensor,val){
+  sensorValues[sensor]=parseInt(val);
+  document.getElementById(sensor).textContent=val;
+}
+function addLog(msg){
+  let log=document.getElementById("logSection");
+  let ts=new Date().toLocaleTimeString("id-ID");
+  let div=document.createElement("div");
+  div.textContent="["+ts+"] "+msg;
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+}
 
+// MQTT
 function connectMQTT(){
   mqttClient=mqtt.connect(CONFIG.mqtt.broker,{clientId:CONFIG.mqtt.clientId});
-  mqttClient.on('connect',()=>{
-    mqttConnected=true;
-    addLog("✅ MQTT Connected");
-    mqttClient.subscribe(CONFIG.mqtt.topics.cmd);
-    mqttClient.subscribe(CONFIG.mqtt.topics.result);
-  });
-  mqttClient.on('message',(topic,payload)=>{
-    try{
-      let data=JSON.parse(payload.toString());
-      if(topic===CONFIG.mqtt.topics.cmd) handleCommand(data);
-      if(topic===CONFIG.mqtt.topics.result) handleResult(data);
-    }catch(e){addLog("❌ Invalid msg: "+e.message);}
-  });
-  mqttClient.on('close',()=>{mqttConnected=false;addLog("🔌 MQTT Disconnected");});
+  mqttClient.on('connect',()=>{mqttConnected=true;addLog("✅ MQTT Connected");});
+  mqttClient.on('close',()=>{mqttConnected=false;addLog("❌ MQTT Disconnected");});
 }
+function calibrateSensors(){addLog("🔧 Kalibrasi selesai ✓");}
 
-function handleCommand(cmd){
-  addLog("📥 CMD: "+JSON.stringify(cmd));
-  if(cmd.action==="session_ready"){
-    sessionActive=true;
-    document.getElementById("btnStart").disabled=false;
-    addLog("✅ Session ready, Start enabled");
-  }else if(cmd.action==="close_session"){
-    sessionActive=false;
-    stopPublishing();
-    addLog("🛑 Session closed by admin");
-  }
-}
-
-function handleResult(result){
-  addLog("📊 Result: "+result.category+" ("+(result.confidence*100).toFixed(1)+"%)");
-}
-
-function calibrateSensors(){addLog("🔄 Kalibrasi selesai ✓");}
-
+// PUBLISHING
 function startPublishing(){
-  if(!mqttConnected){addLog("❌ MQTT belum connect");return;}
-  if(!sessionActive){addLog("⚠️ Belum ada sesi aktif");return;}
-  isPublishing=true;packetCount=0;
+  if(!mqttConnected){addLog("⚠️ MQTT belum connect");return;}
+  isPublishing=true;
+  packetCount=0;
   document.getElementById("btnStart").disabled=true;
   document.getElementById("btnStop").disabled=false;
-  publishData();publishTimer=setInterval(publishData,CONFIG.publishInterval);
+  publishData();
+  publishTimer=setInterval(publishData,CONFIG.publishInterval);
 }
-
 function publishData(){
   let data={device_id:CONFIG.deviceId,ts:new Date().toISOString(),...sensorValues};
-  mqttClient.publish(CONFIG.mqtt.topics.sensor,JSON.stringify(data));
-  packetCount++;document.getElementById("packetCount").textContent=packetCount;
+  mqttClient.publish(CONFIG.mqtt.topic,JSON.stringify(data));
+  packetCount++;
+  document.getElementById("packetCount").textContent=packetCount;
   addLog("📤 Published #"+packetCount+" → "+JSON.stringify(data));
 }
-
 function stopPublishing(){
-  isPublishing=false;clearInterval(publishTimer);
+  isPublishing=false;
+  clearInterval(publishTimer);
   document.getElementById("btnStart").disabled=false;
   document.getElementById("btnStop").disabled=true;
   addLog("⏹️ Publishing stopped");
 }
 
+// INIT
 window.addEventListener('load',()=>{connectMQTT();});
 </script>
 </body>
