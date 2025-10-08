@@ -391,6 +391,7 @@ let isPublishing = false;
 let isCalibrating = false;
 let publishTimer = null;
 let packetCount = 0;
+let sessionActive = false; // Track apakah ada sesi aktif di website
 
 // Sensor baseline values
 let sensorBaseline = {
@@ -464,8 +465,8 @@ MQTT: Connecting...`);
 WiFi: SUNSTONE ✓
 MQTT: Connected ✓
 
-<span class="oled-blink">Sistem siap</span>
-Tekan MULAI...`);
+<span class="oled-blink">Menunggu sesi...</span>
+Admin belum buka sesi`);
       
       // Subscribe to command topic
       mqttClient.subscribe(CONFIG.mqtt.topics.cmd, (err) => {
@@ -526,6 +527,7 @@ function handleCommand(cmd) {
   
   if (cmd.action === 'close_session') {
     addLog('🛑 Session closed by admin');
+    sessionActive = false;
     stopPublishing();
     updateOLED(`░░░░░░░░░░░░░░░░░░░░
 ░ SUNSTONE ESP32 ░
@@ -534,7 +536,40 @@ function handleCommand(cmd) {
 Sesi Selesai!
 
 Terima kasih
-Silakan tutup alat`);
+Menunggu sesi baru...`);
+  } else if (cmd.action === 'no_session') {
+    addLog('⚠️ No active session');
+    sessionActive = false;
+    if (isPublishing) {
+      stopPublishing();
+    }
+    updateOLED(`░░░░░░░░░░░░░░░░░░░░
+░ SUNSTONE ESP32 ░
+░░░░░░░░░░░░░░░░░░░░
+
+⚠️ TIDAK ADA SESI
+
+Tunggu admin
+buka sesi baru...`);
+    document.getElementById('btnStart').disabled = true;
+  } else if (cmd.action === 'session_ready') {
+    addLog('✅ Session ready: ' + cmd.patient_name);
+    sessionActive = true;
+    updateOLED(`░░░░░░░░░░░░░░░░░░░░
+░ SUNSTONE ESP32 ░
+░░░░░░░░░░░░░░░░░░░░
+
+✅ SESI SIAP
+
+Pasien: ${cmd.patient_name.substring(0, 15)}
+
+<span class="oled-blink">Tekan MULAI</span>`);
+    document.getElementById('btnStart').disabled = false;
+  } else if (cmd.action === 'session_active') {
+    sessionActive = true;
+    if (!isPublishing && !isCalibrating) {
+      document.getElementById('btnStart').disabled = false;
+    }
   }
 }
 
@@ -631,11 +666,12 @@ Jangan tiup sensor!`);
 
 Kalibrasi Selesai ✓
 
-<span class="oled-blink">Sistem siap</span>
-Tekan MULAI...`);
+<span class="oled-blink">Menunggu sesi...</span>
+Admin belum buka sesi`);
     
     document.getElementById('btnCalibrate').disabled = false;
-    document.getElementById('btnStart').disabled = false;
+    // JANGAN enable btnStart dulu, tunggu command session_ready
+    document.getElementById('btnStart').disabled = true;
   }, CONFIG.calibrationTime);
 }
 
@@ -646,6 +682,12 @@ function startPublishing() {
   if (!mqttConnected) {
     addLog('❌ MQTT not connected!');
     alert('MQTT belum terhubung. Tunggu beberapa saat...');
+    return;
+  }
+  
+  if (!sessionActive) {
+    addLog('❌ No active session!');
+    alert('⚠️ Belum ada sesi yang dibuka di website!\n\nMinta admin buka sesi pasien dulu.');
     return;
   }
   
@@ -727,14 +769,26 @@ function stopPublishing() {
   updateStatus('publishStatus', 'Idle', null);
   document.getElementById('publishStatus').style.color = '#95a5a6';
   
-  updateOLED(`░░░░░░░░░░░░░░░░░░░░
+  // Cek apakah masih ada sesi aktif
+  if (sessionActive) {
+    updateOLED(`░░░░░░░░░░░░░░░░░░░░
 ░ SUNSTONE ESP32 ░
 ░░░░░░░░░░░░░░░░░░░░
 
 Perekaman Selesai
 
 Total: ${packetCount} paket
-Menunggu perintah...`);
+<span class="oled-blink">Siap rekam lagi...</span>`);
+  } else {
+    updateOLED(`░░░░░░░░░░░░░░░░░░░░
+░ SUNSTONE ESP32 ░
+░░░░░░░░░░░░░░░░░░░░
+
+Perekaman Selesai
+
+Total: ${packetCount} paket
+Menunggu sesi baru...`);
+  }
 }
 
 // ============================================
@@ -743,6 +797,9 @@ Menunggu perintah...`);
 window.addEventListener('load', () => {
   addLog('🚀 ESP32 Simulator starting...');
   addLog('Device ID: ' + CONFIG.deviceId);
+  
+  // Disable start button sampai ada sesi
+  document.getElementById('btnStart').disabled = true;
   
   // Auto-connect MQTT after 1 second
   setTimeout(() => {
